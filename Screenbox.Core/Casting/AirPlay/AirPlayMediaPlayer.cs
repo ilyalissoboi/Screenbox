@@ -36,8 +36,16 @@ namespace Screenbox.Core.Casting.AirPlay;
 /// </remarks>
 public sealed partial class AirPlayMediaPlayer : IMediaPlayer
 {
-    // How long a status wait may block before the position is read again.
-    private static readonly TimeSpan StatusPollInterval = TimeSpan.FromMilliseconds(500);
+    // How long a status wait may block before the position is read again. The
+    // status is local state, so a short interval keeps the seek bar smooth.
+    private static readonly TimeSpan StatusPollInterval = TimeSpan.FromMilliseconds(250);
+
+    // After a seek the receiver keeps reporting the old position for a moment.
+    // Reported positions farther than SeekTolerance from the target are ignored
+    // until one comes close or SeekSettleTime passes, so the seek bar does not
+    // jump back.
+    private static readonly TimeSpan SeekSettleTime = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan SeekTolerance = TimeSpan.FromSeconds(2);
 
     // Not raised while casting: the item does not change, end of media ends the
     // cast, and the inert members never change.
@@ -75,6 +83,8 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     private TimeSpan _naturalDuration;
     private MediaPlaybackState _playbackState = MediaPlaybackState.Opening;
     private bool _ended;
+    private TimeSpan? _seekTarget;
+    private DateTimeOffset _seekDeadline;
     private readonly PlaybackItem _item;
 
     /// <param name="cast">A started cast; the coordinator keeps ownership.</param>
@@ -144,6 +154,12 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         set
         {
             TimeSpan target = value < TimeSpan.Zero ? TimeSpan.Zero : value;
+            lock (_gate)
+            {
+                _seekTarget = target;
+                _seekDeadline = DateTimeOffset.UtcNow + SeekSettleTime;
+            }
+
             SetPosition(target);
             SendCommand(nameof(Cast.Seek), () => _cast.Seek(target.TotalSeconds));
         }
@@ -283,9 +299,9 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
             }
         }
 
-        if (status.PositionSeconds is { } position)
+        if (status.PositionSeconds is { } positionSeconds && !IsStaleAfterSeek(TimeSpan.FromSeconds(positionSeconds)))
         {
-            SetPosition(TimeSpan.FromSeconds(position));
+            SetPosition(TimeSpan.FromSeconds(positionSeconds));
         }
 
         MediaPlaybackState? state = status.PlaybackState switch
@@ -309,6 +325,25 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
             {
                 PlaybackStateChanged?.Invoke(this, new ValueChangedEventArgs<MediaPlaybackState>(newState, oldState));
             }
+        }
+    }
+
+    /// <summary>
+    /// Whether a reported position predates the last seek: far from its target
+    /// while the seek is settling. A position near the target ends the settling.
+    /// </summary>
+    private bool IsStaleAfterSeek(TimeSpan reported)
+    {
+        lock (_gate)
+        {
+            if (_seekTarget is not { } target) return false;
+            if (DateTimeOffset.UtcNow > _seekDeadline || (reported - target).Duration() <= SeekTolerance)
+            {
+                _seekTarget = null;
+                return false;
+            }
+
+            return true;
         }
     }
 
