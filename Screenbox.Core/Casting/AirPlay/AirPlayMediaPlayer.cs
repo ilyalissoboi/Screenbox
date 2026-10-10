@@ -47,6 +47,11 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     private static readonly TimeSpan SeekSettleTime = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SeekTolerance = TimeSpan.FromSeconds(2);
 
+    // The receiver's duration of the remuxed HLS differs from VLC's by container
+    // timing (a fraction of a second). Reporting that as a change makes the seek
+    // bar reset its length and chapters, so only a larger difference is taken.
+    private static readonly TimeSpan DurationTolerance = TimeSpan.FromSeconds(1);
+
     // Not raised while casting: the item does not change, end of media ends the
     // cast, and the inert members never change.
     public event TypedEventHandler<IMediaPlayer, EventArgs>? MediaEnded { add { } remove { } }
@@ -290,14 +295,15 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         {
             TimeSpan duration = TimeSpan.FromSeconds(seconds);
             TimeSpan oldDuration;
+            bool changed;
             lock (_gate)
             {
                 oldDuration = _naturalDuration;
-                _naturalDuration = duration;
+                changed = oldDuration <= TimeSpan.Zero || (duration - oldDuration).Duration() > DurationTolerance;
+                if (changed) _naturalDuration = duration;
             }
 
-            // The receiver's duration can differ from VLC's by a few frames; ignore that jitter.
-            if (Math.Abs((duration - oldDuration).TotalMilliseconds) > 50)
+            if (changed)
             {
                 NaturalDurationChanged?.Invoke(this, new ValueChangedEventArgs<TimeSpan>(duration, oldDuration));
             }
@@ -312,7 +318,8 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         {
             CastPlaybackState.Playing => MediaPlaybackState.Playing,
             CastPlaybackState.Paused => MediaPlaybackState.Paused,
-            CastPlaybackState.Loading => MediaPlaybackState.Buffering,
+            // Loading appears only mid-playback (the cast starts once the TV plays), briefly
+            // after each seek; reporting it would flip the play/pause button to "play".
             // Idle, stopped and ended are followed by the end of the cast.
             _ => null,
         };
