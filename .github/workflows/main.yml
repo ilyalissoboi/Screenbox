@@ -84,6 +84,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Get the SendAirPlay2 package
+        run: .\scripts\Get-AirPlayPackage.ps1
+
       - name: Extract version from tag
         id: tag-version
         if: github.ref_type == 'tag'
