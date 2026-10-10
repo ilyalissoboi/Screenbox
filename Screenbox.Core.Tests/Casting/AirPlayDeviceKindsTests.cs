@@ -15,7 +15,13 @@ public class AirPlayDeviceKindsTests
     [Arguments("iMac21,1", RendererDeviceKind.Desktop)]
     [Arguments("Macmini9,1", RendererDeviceKind.Desktop)]
     [Arguments("MacPro7,1", RendererDeviceKind.Desktop)]
-    [Arguments("Mac14,3", RendererDeviceKind.Desktop)]
+    [Arguments("Mac14,3", RendererDeviceKind.Desktop)] // Mac mini (M2)
+    [Arguments("Mac13,1", RendererDeviceKind.Desktop)] // Mac Studio (M1 Max)
+    [Arguments("Mac16,2", RendererDeviceKind.Desktop)] // iMac (M4)
+    [Arguments("Mac14,9", RendererDeviceKind.Laptop)] // MacBook Pro 14" (M2 Pro)
+    [Arguments("Mac15,3", RendererDeviceKind.Laptop)] // MacBook Pro 14" (M3)
+    [Arguments("Mac14,2", RendererDeviceKind.Laptop)] // MacBook Air (M2)
+    [Arguments("Mac99,1", RendererDeviceKind.Laptop)] // a future identifier
     [Arguments("SomeVendorTV2024", RendererDeviceKind.Television)]
     [Arguments("", RendererDeviceKind.Television)]
     public async Task FromModel_MapsAdvertisedModel(string model, RendererDeviceKind expected)
