@@ -46,9 +46,18 @@
                     <StackPanel Orientation="Horizontal">
                         <FontIcon
                             Margin="0,0,8,0"
+                            VerticalAlignment="Center"
                             FontSize="16"
                             Glyph="{x:Bind Converter={StaticResource RendererGlyphConverter}}" />
-                        <TextBlock Text="{x:Bind Name}" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Name}" />
+                            <!--  The model family (for example "MacBook Pro"), when known.  -->
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ModelDescription}"
+                                Visibility="{x:Bind ModelDescription, Converter={StaticResource StringVisibilityConverter}}" />
+                        </StackPanel>
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
