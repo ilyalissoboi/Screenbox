@@ -37,6 +37,24 @@ public partial class AirPlayProfilesTests
     }
 
     [Test]
+    public async Task ForReceiver_UnrecognizedIdsWithSomeHexDigits_DoNotShareProfile()
+    {
+        // Stripping non-hex characters would give both "airplay-f1".
+        string first = AirPlayProfiles.ForReceiver("foo-1");
+        string second = AirPlayProfiles.ForReceiver("f-1");
+
+        await Assert.That(first).IsNotEqualTo(second);
+        await Assert.That(first.Length).IsEqualTo("airplay-".Length + 32);
+        await Assert.That(ProfileFormat().IsMatch(second)).IsTrue();
+    }
+
+    [Test]
+    public async Task ForReceiver_DashSeparatedMac_UsesHexDigits()
+    {
+        await Assert.That(AirPlayProfiles.ForReceiver("AA-BB-CC-DD-EE-0F")).IsEqualTo("airplay-aabbccddee0f");
+    }
+
+    [Test]
     public async Task ForReceiver_VeryLongId_StaysWithinProfileLimit()
     {
         string profile = AirPlayProfiles.ForReceiver(new string('a', 100));
