@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Screenbox.Core.Contexts;
 using Screenbox.Core.Enums;
+using Screenbox.Core.Events;
+using Screenbox.Core.Helpers;
 using Screenbox.Core.Messages;
 using Screenbox.Core.Models;
 using Screenbox.Core.Playback;
@@ -43,6 +45,10 @@ public sealed class AirPlayCastCoordinator
     private VlcMediaPlayer? _vlcPlayer;
     private Cast? _startingCast;
     private bool _swapping;
+
+    // Keeps this PC awake while the TV plays: VLC is paused during a cast, so its own
+    // request is released, and a sleeping PC would end the cast it is serving.
+    private readonly DisplayRequestTracker _displayRequest = new();
 
     public AirPlayCastCoordinator(PlayerContext playerContext, CastContext castContext, IPlayerService playerService,
         ILogger<AirPlayCastCoordinator> logger)
@@ -136,17 +142,19 @@ public sealed class AirPlayCastCoordinator
             return result;
         }
 
-        if (_playerContext.MediaPlayer != vlcPlayer)
+        if (_playerContext.MediaPlayer != vlcPlayer || vlcPlayer.PlaybackItem != item)
         {
-            // The local player was replaced while the cast started; keep the new one.
+            // The local player was replaced, or another item was chosen, while the cast
+            // started: the cast is of media no longer wanted, so keep the local choice.
             DisposeInBackground(cast);
-            return AirPlayCastResult.Failed;
+            return AirPlayCastResult.Cancelled;
         }
 
         AirPlayMediaPlayer player = new(cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
             vlcPlayer.NaturalVideoHeight, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger);
         player.CastEnded += OnCastEnded;
         player.EndRequested += OnEndRequested;
+        player.PlaybackStateChanged += OnCastPlaybackStateChanged;
         _player = player;
         _cast = cast;
         _vlcPlayer = vlcPlayer;
@@ -203,6 +211,8 @@ public sealed class AirPlayCastCoordinator
         if (_player is not { } player || _cast is not { } cast) return;
         player.CastEnded -= OnCastEnded;
         player.EndRequested -= OnEndRequested;
+        player.PlaybackStateChanged -= OnCastPlaybackStateChanged;
+        if (_displayRequest.IsActive) _displayRequest.RequestRelease();
         player.StopWatching();
         TimeSpan position = lastPosition ?? player.Position;
         VlcMediaPlayer? vlcPlayer = _vlcPlayer;
@@ -223,6 +233,25 @@ public sealed class AirPlayCastCoordinator
             WeakReferenceMessenger.Default.Send(new NotificationMessage(NotificationLevel.Info,
                 NotificationKind.AirPlayCastEnded));
         }
+    }
+
+    /// <summary>Holds the display request while the TV plays, as local playback does.</summary>
+    private void OnCastPlaybackStateChanged(IMediaPlayer sender, ValueChangedEventArgs<MediaPlaybackState> args)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (sender != _player) return;
+            bool shouldBeActive = args.NewValue is MediaPlaybackState.Playing or MediaPlaybackState.Buffering
+                or MediaPlaybackState.Opening;
+            if (shouldBeActive && !_displayRequest.IsActive)
+            {
+                _displayRequest.RequestActive();
+            }
+            else if (!shouldBeActive && _displayRequest.IsActive)
+            {
+                _displayRequest.RequestRelease();
+            }
+        });
     }
 
     private void Swap(IMediaPlayer player)
