@@ -27,11 +27,13 @@ namespace Screenbox.Core.Casting.AirPlay;
 /// volume, mute, rate, tracks, chapters, subtitles and frame stepping.
 /// </para>
 /// <para>
-/// The player never ends the cast itself. When the cast ends on the receiver's
-/// side it raises <see cref="CastEnded"/> once; setting another
-/// <see cref="PlaybackItem"/> or calling <see cref="Close"/> raises
-/// <see cref="EndRequested"/>. <see cref="AirPlayCastCoordinator"/> owns the
-/// cast and handles both.
+/// The player never changes or ends the cast itself; <see cref="AirPlayCastCoordinator"/>
+/// owns the cast. When the cast ends on the receiver's side the player raises
+/// <see cref="CastEnded"/> once. At the end of the media the coordinator then
+/// calls <see cref="FinishAtEnd"/>, which raises <see cref="MediaEnded"/> for the
+/// play queue. Setting another <see cref="PlaybackItem"/>, calling
+/// <see cref="Close"/>, or setting <see cref="Position"/> once finished (repeat
+/// one) raises <see cref="ItemRequested"/>: each item is a new cast.
 /// </para>
 /// </remarks>
 public sealed partial class AirPlayMediaPlayer : IMediaPlayer
@@ -52,9 +54,11 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     // bar reset its length and chapters, so only a larger difference is taken.
     private static readonly TimeSpan DurationTolerance = TimeSpan.FromSeconds(1);
 
-    // Not raised while casting: the item does not change, end of media ends the
-    // cast, and the inert members never change.
-    public event TypedEventHandler<IMediaPlayer, EventArgs>? MediaEnded { add { } remove { } }
+    /// <summary>Raised by <see cref="FinishAtEnd"/>, on the UI thread.</summary>
+    public event TypedEventHandler<IMediaPlayer, EventArgs>? MediaEnded;
+
+    // Not raised while casting: this player's item never changes (each item is a new
+    // cast), and the inert members never change.
     public event TypedEventHandler<IMediaPlayer, EventArgs>? MediaFailed { add { } remove { } }
     public event TypedEventHandler<IMediaPlayer, EventArgs>? MediaOpened { add { } remove { } }
     public event TypedEventHandler<IMediaPlayer, EventArgs>? IsMutedChanged { add { } remove { } }
@@ -75,10 +79,11 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     internal event Action<AirPlayMediaPlayer, CastStatus>? CastEnded;
 
     /// <summary>
-    /// Raised on the calling thread when Screenbox asks to play another item (or
-    /// none) or closes the player; the argument is the requested item.
+    /// Raised on the calling thread, which may be any thread, when Screenbox asks
+    /// for another item (or none, or closes the player), or seeks once the media
+    /// has finished (repeat one): the requested item and where to start it.
     /// </summary>
-    internal event Action<AirPlayMediaPlayer, PlaybackItem?>? EndRequested;
+    internal event Action<AirPlayMediaPlayer, PlaybackItem?, TimeSpan>? ItemRequested;
 
     private readonly Cast _cast;
     private readonly ILogger _logger;
@@ -88,6 +93,9 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     private TimeSpan _naturalDuration;
     private MediaPlaybackState _playbackState = MediaPlaybackState.Opening;
     private bool _ended;
+    private bool _finished;
+    private PlaybackItem? _requestedItem;
+    private bool _hasRequestedItem;
     private TimeSpan? _seekTarget;
     private DateTimeOffset _seekDeadline;
     private readonly PlaybackItem _item;
@@ -163,6 +171,13 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         set
         {
             TimeSpan target = value < TimeSpan.Zero ? TimeSpan.Zero : value;
+            if (IsFinished)
+            {
+                // The cast has ended; a seek now (repeat one) plays the item again as a new cast.
+                ItemRequested?.Invoke(this, _item, target);
+                return;
+            }
+
             lock (_gate)
             {
                 _seekTarget = target;
@@ -201,31 +216,80 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
 
     /// <summary>
     /// The item being cast. Setting a different item (or none) does not change
-    /// the cast; it raises <see cref="EndRequested"/> for the coordinator.
+    /// this cast; it raises <see cref="ItemRequested"/> for the coordinator.
     /// </summary>
     public PlaybackItem? PlaybackItem
     {
         get => _item;
         set
         {
-            if (value == _item) return;
-            EndRequested?.Invoke(this, value);
+            // The play queue sets the same item twice when it moves on (PlaySingle via
+            // SetCurrentItem, then directly); one request per item is enough.
+            lock (_gate)
+            {
+                if (value == _item || (_hasRequestedItem && value == _requestedItem)) return;
+                _requestedItem = value;
+                _hasRequestedItem = true;
+            }
+
+            ItemRequested?.Invoke(this, value, TimeSpan.Zero);
+        }
+    }
+
+    /// <summary>Whether the media has finished (<see cref="FinishAtEnd"/>).</summary>
+    internal bool IsFinished
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _finished;
+            }
         }
     }
 
     public void Close()
     {
-        EndRequested?.Invoke(this, null);
+        ItemRequested?.Invoke(this, null, TimeSpan.Zero);
     }
 
+    // Once finished the cast is gone: the play queue calls Play right after choosing the
+    // next item, which then starts as its own cast, so these do nothing.
     public void Play()
     {
+        if (IsFinished) return;
         SendCommand(nameof(Cast.Play), _cast.Play);
     }
 
     public void Pause()
     {
+        if (IsFinished) return;
         SendCommand(nameof(Cast.Pause), _cast.Pause);
+    }
+
+    /// <summary>
+    /// Marks the media as finished at its end and raises <see cref="MediaEnded"/>,
+    /// so the play queue can choose what comes next. Call on the UI thread after
+    /// <see cref="CastEnded"/> reported the end of the media.
+    /// </summary>
+    internal void FinishAtEnd()
+    {
+        MediaPlaybackState oldState;
+        lock (_gate)
+        {
+            _finished = true;
+            oldState = _playbackState;
+            _playbackState = MediaPlaybackState.Paused;
+        }
+
+        SetPosition(NaturalDuration);
+        if (oldState != MediaPlaybackState.Paused)
+        {
+            PlaybackStateChanged?.Invoke(this,
+                new ValueChangedEventArgs<MediaPlaybackState>(MediaPlaybackState.Paused, oldState));
+        }
+
+        MediaEnded?.Invoke(this, EventArgs.Empty);
     }
 
     public void StepForwardOneFrame()
@@ -243,6 +307,10 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     /// <summary>Starts following the cast's status on a background thread.</summary>
     internal void StartWatching()
     {
+        // Subscribers read the state of a swapped-in player only on a change; report the
+        // start position now rather than after the first status.
+        TimeSpan position = Position;
+        PositionChanged?.Invoke(this, new ValueChangedEventArgs<TimeSpan>(position, position));
         CancellationToken token = _stop.Token;
         Task.Factory.StartNew(() => Watch(token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }

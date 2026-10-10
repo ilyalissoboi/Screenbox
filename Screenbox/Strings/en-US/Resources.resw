@@ -1239,5 +1239,8 @@
   <data name="AirPlayCastEndedMessage" xml:space="preserve">
     <value>Playback is paused here at the last position.</value>
   </data>
+  <data name="AirPlayNextItemNotCastMessage" xml:space="preserve">
+    <value>The next item can't be cast with AirPlay, so it is paused here.</value>
+  </data>
 </root>
 

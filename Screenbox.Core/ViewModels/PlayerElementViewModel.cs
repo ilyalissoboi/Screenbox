@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using LibVLCSharp.Shared;
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,8 @@ namespace Screenbox.Core.ViewModels;
 
 public sealed partial class PlayerElementViewModel : ObservableRecipient,
     IRecipient<ChangeAspectRatioMessage>,
-    IRecipient<SettingsChangedMessage>
+    IRecipient<SettingsChangedMessage>,
+    IRecipient<PropertyChangedMessage<IMediaPlayer?>>
 {
     private const double GestureStepAmount = 5.0;
 
@@ -49,6 +51,12 @@ public sealed partial class PlayerElementViewModel : ObservableRecipient,
         get => _playerContext.MediaPlayer as VlcMediaPlayer;
         set => _playerContext.MediaPlayer = value;
     }
+
+    /// <summary>
+    /// The active player, which is not VLC while an item is cast with AirPlay: the
+    /// system media transport controls and the display request follow it.
+    /// </summary>
+    private IMediaPlayer? ActivePlayer => _playerContext.MediaPlayer;
 
     private readonly PlayerContext _playerContext;
     private readonly IPlayerService _playerService;
@@ -100,6 +108,29 @@ public sealed partial class PlayerElementViewModel : ObservableRecipient,
 
         Messenger.Register<ChangeAspectRatioMessage>(this);
         Messenger.Register<SettingsChangedMessage>(this);
+        Messenger.Register<PropertyChangedMessage<IMediaPlayer?>>(this);
+    }
+
+    /// <summary>
+    /// Follows the active player's state and position for the system media
+    /// transport controls and the display request, whichever player it is.
+    /// </summary>
+    public void Receive(PropertyChangedMessage<IMediaPlayer?> message)
+    {
+        if (message.Sender is not PlayerContext) return;
+        if (message.OldValue is { } oldPlayer)
+        {
+            oldPlayer.PlaybackStateChanged -= OnPlaybackStateChanged;
+            oldPlayer.PositionChanged -= OnPositionChanged;
+        }
+
+        if (message.NewValue is { } newPlayer)
+        {
+            newPlayer.PlaybackStateChanged += OnPlaybackStateChanged;
+            newPlayer.PositionChanged += OnPositionChanged;
+            // A swapped-in player raises no state change for the state it is already in.
+            OnPlaybackStateChanged(newPlayer, null);
+        }
     }
 
     public void Receive(SettingsChangedMessage message)
@@ -121,8 +152,7 @@ public sealed partial class PlayerElementViewModel : ObservableRecipient,
         VlcMediaPlayer? oldPlayer = VlcMediaPlayer;
         if (oldPlayer != null)
         {
-            oldPlayer.PlaybackStateChanged -= OnPlaybackStateChanged;
-            oldPlayer.PositionChanged -= OnPositionChanged;
+            // State and position follow the active player (Receive); these are VLC's own.
             oldPlayer.MediaFailed -= OnMediaFailed;
             oldPlayer.PlaybackItemChanged -= OnPlaybackItemChanged;
             VlcMediaPlayer = null;
@@ -191,8 +221,6 @@ public sealed partial class PlayerElementViewModel : ObservableRecipient,
                 }
 
                 VlcMediaPlayer = vlcMediaPlayer;
-                player.PlaybackStateChanged += OnPlaybackStateChanged;
-                player.PositionChanged += OnPositionChanged;
                 player.MediaFailed += OnMediaFailed;
                 player.PlaybackItemChanged += OnPlaybackItemChanged;
 
@@ -474,29 +502,30 @@ public sealed partial class PlayerElementViewModel : ObservableRecipient,
 
     private void TransportControlsOnPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
     {
-        if (VlcMediaPlayer == null) return;
-        VlcMediaPlayer.Position = args.RequestedPlaybackPosition;
+        if (ActivePlayer is not { } player) return;
+        player.Position = args.RequestedPlaybackPosition;
     }
 
     private void TransportControlsOnButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
     {
-        if (VlcMediaPlayer == null) return;
+        // The active player, so the buttons reach the TV while an item is cast with AirPlay.
+        if (ActivePlayer is not { } player) return;
         switch (args.Button)
         {
             case SystemMediaTransportControlsButton.Pause:
-                VlcMediaPlayer.Pause();
+                player.Pause();
                 break;
             case SystemMediaTransportControlsButton.Play:
-                VlcMediaPlayer.Play();
+                player.Play();
                 break;
             case SystemMediaTransportControlsButton.Stop:
-                VlcMediaPlayer.PlaybackItem = null;
+                player.PlaybackItem = null;
                 break;
             case SystemMediaTransportControlsButton.FastForward:
-                VlcMediaPlayer.Position += TimeSpan.FromSeconds(10);
+                player.Position += TimeSpan.FromSeconds(10);
                 break;
             case SystemMediaTransportControlsButton.Rewind:
-                VlcMediaPlayer.Position -= TimeSpan.FromSeconds(10);
+                player.Position -= TimeSpan.FromSeconds(10);
                 break;
         }
     }
