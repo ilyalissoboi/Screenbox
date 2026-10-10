@@ -103,6 +103,10 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         _logger = logger;
         _item = item;
         _position = startPosition;
+        // The library seeks to the start position as the cast starts, and the receiver
+        // briefly reports the position before that seek, so treat it like a seek.
+        _seekTarget = startPosition;
+        _seekDeadline = DateTimeOffset.UtcNow + SeekSettleTime;
         _naturalDuration = naturalDuration;
         NaturalVideoWidth = naturalVideoWidth;
         NaturalVideoHeight = naturalVideoHeight;
