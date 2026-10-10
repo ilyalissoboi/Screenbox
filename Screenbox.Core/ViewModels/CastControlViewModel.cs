@@ -129,6 +129,14 @@ public sealed partial class CastControlViewModel : ObservableObject
 
     private void RendererWatcherOnRendererFound(object? sender, RendererFoundEventArgs e)
     {
-        _dispatcherQueue.TryEnqueue(() => Renderers.Add(e.Renderer));
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            // A watcher stopped after queuing this event has made the renderer unavailable;
+            // StopDiscovering has cleared the list by then, so adding it would leave a stale row.
+            if (e.Renderer.IsAvailable && !Renderers.Contains(e.Renderer))
+            {
+                Renderers.Add(e.Renderer);
+            }
+        });
     }
 }
