@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Screenbox.Core.Casting.AirPlay;
 using Screenbox.Core.Contexts;
 using Screenbox.Core.Events;
 using Screenbox.Core.Models;
@@ -50,6 +51,15 @@ public sealed partial class CastControlViewModel : ObservableObject
         watcher.RendererFound += RendererWatcherOnRendererFound;
         watcher.RendererLost += RendererWatcherOnRendererLost;
         watcher.Start();
+
+        // AirPlay receivers come from send-airplay2, listed beside the LibVLC renderers.
+        // StopCasting restarts discovery while the flyout is open; keep one AirPlay watcher.
+        if (_castContext.AirPlayReceiverWatcher is not null) return;
+        var airPlayWatcher = _castService.CreateAirPlayReceiverWatcher();
+        _castContext.AirPlayReceiverWatcher = airPlayWatcher;
+        airPlayWatcher.RendererFound += RendererWatcherOnRendererFound;
+        airPlayWatcher.RendererLost += RendererWatcherOnRendererLost;
+        airPlayWatcher.Start();
     }
 
     public void StopDiscovering()
@@ -62,6 +72,15 @@ public sealed partial class CastControlViewModel : ObservableObject
             watcher.Stop();
             watcher.Dispose();
             _castContext.RendererWatcher = null;
+        }
+
+        var airPlayWatcher = _castContext.AirPlayReceiverWatcher;
+        if (airPlayWatcher is not null)
+        {
+            airPlayWatcher.RendererFound -= RendererWatcherOnRendererFound;
+            airPlayWatcher.RendererLost -= RendererWatcherOnRendererLost;
+            airPlayWatcher.Dispose();
+            _castContext.AirPlayReceiverWatcher = null;
         }
 
         SelectedRenderer = null;
@@ -85,7 +104,8 @@ public sealed partial class CastControlViewModel : ObservableObject
         }
     }
 
-    private bool CanCast() => SelectedRenderer is { IsAvailable: true };
+    // AirPlay receivers are listed only for now; casting to them comes with the AirPlay player.
+    private bool CanCast() => SelectedRenderer is { IsAvailable: true, Kind: RendererKind.Chromecast };
 
     [RelayCommand]
     private void StopCasting()
@@ -109,6 +129,14 @@ public sealed partial class CastControlViewModel : ObservableObject
 
     private void RendererWatcherOnRendererFound(object? sender, RendererFoundEventArgs e)
     {
-        _dispatcherQueue.TryEnqueue(() => Renderers.Add(e.Renderer));
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            // A watcher stopped after queuing this event has made the renderer unavailable;
+            // StopDiscovering has cleared the list by then, so adding it would leave a stale row.
+            if (e.Renderer.IsAvailable && !Renderers.Contains(e.Renderer))
+            {
+                Renderers.Add(e.Renderer);
+            }
+        });
     }
 }

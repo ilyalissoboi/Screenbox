@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Screenbox.Core.Casting.AirPlay;
 using Screenbox.Core.Helpers;
 using Screenbox.Core.Models;
 
@@ -8,6 +9,9 @@ public sealed partial class CastContext : ObservableObject
 {
     [ObservableProperty]
     public partial RendererWatcher? RendererWatcher { get; set; }
+
+    [ObservableProperty]
+    public partial AirPlayReceiverWatcher? AirPlayReceiverWatcher { get; set; }
 
     [ObservableProperty]
     public partial Renderer? ActiveRenderer { get; set; }
