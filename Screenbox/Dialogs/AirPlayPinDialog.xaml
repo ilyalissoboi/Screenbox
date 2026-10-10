@@ -1,0 +1,28 @@
+﻿<ContentDialog
+    x:Class="Screenbox.Dialogs.AirPlayPinDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:strings="using:Screenbox.Strings"
+    CloseButtonText="{x:Bind strings:Resources.Cancel}"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="False"
+    PrimaryButtonText="{x:Bind strings:Resources.AirPlayPair}"
+    Style="{StaticResource DefaultContentDialogStyle}"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="12">
+        <TextBlock
+            x:Name="PromptText"
+            Text="{x:Bind strings:Resources.AirPlayPinDialogText}"
+            TextWrapping="Wrap" />
+        <PasswordBox
+            x:Name="PinBox"
+            AutomationProperties.LabeledBy="{x:Bind PromptText}"
+            InputScope="NumericPin"
+            MaxLength="8"
+            PasswordChanged="PinBox_OnPasswordChanged"
+            PlaceholderText="{x:Bind strings:Resources.AirPlayPinPlaceholder}" />
+    </StackPanel>
+</ContentDialog>

@@ -23,4 +23,9 @@ public enum NotificationKind
     PlaylistItemsAdded,
 
     ResumePosition,
+
+    AirPlayPaired,
+    AirPlayPinRejected,
+    AirPlayPairingConnectionFailed,
+    AirPlayPairingFailed,
 }

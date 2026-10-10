@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Screenbox.Core.ViewModels;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
@@ -15,6 +16,10 @@ public sealed partial class CastControl : UserControl
         this.InitializeComponent();
         DataContext = Ioc.Default.GetRequiredService<CastControlViewModel>();
     }
+
+    /// <summary>Cast is replaced by Pair while the selected AirPlay receiver is unpaired.</summary>
+    private Visibility GetCastButtonVisibility(bool isSelectedRendererUnpaired) =>
+        isSelectedRendererUnpaired ? Visibility.Collapsed : Visibility.Visible;
 
     public static Flyout GetFlyout()
     {

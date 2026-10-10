@@ -1189,5 +1189,31 @@
     <value>Increase {0}</value>
     <comment>#Format[String value]</comment>
   </data>
+  <data name="AirPlayPair" xml:space="preserve">
+    <value>Pair</value>
+  </data>
+  <data name="AirPlayPinDialogTitle" xml:space="preserve">
+    <value>Pair with {0}</value>
+    <comment>#Format[String name]</comment>
+  </data>
+  <data name="AirPlayPinDialogText" xml:space="preserve">
+    <value>Enter the PIN shown on your TV.</value>
+  </data>
+  <data name="AirPlayPinPlaceholder" xml:space="preserve">
+    <value>PIN</value>
+  </data>
+  <data name="AirPlayPairedNotificationTitle" xml:space="preserve">
+    <value>Paired with {0}</value>
+    <comment>#Format[String name]</comment>
+  </data>
+  <data name="AirPlayPairingFailedNotificationTitle" xml:space="preserve">
+    <value>Couldn't pair with the TV</value>
+  </data>
+  <data name="AirPlayPinRejectedMessage" xml:space="preserve">
+    <value>The PIN wasn't accepted. Select Pair to try again.</value>
+  </data>
+  <data name="AirPlayPairingConnectionFailedMessage" xml:space="preserve">
+    <value>Make sure the TV is on and connected to the same network as this device.</value>
+  </data>
 </root>
 

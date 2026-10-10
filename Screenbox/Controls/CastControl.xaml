@@ -97,7 +97,18 @@
             HorizontalAlignment="Right"
             Command="{x:Bind ViewModel.CastCommand}"
             Content="{x:Bind strings:Resources.Cast}"
-            Style="{StaticResource AccentButtonStyle}" />
+            Style="{StaticResource AccentButtonStyle}"
+            Visibility="{x:Bind GetCastButtonVisibility(ViewModel.IsSelectedRendererUnpaired), Mode=OneWay}" />
+
+        <!--  An unpaired AirPlay receiver is paired first; the PIN dialog asks for the PIN the TV shows.  -->
+        <Button
+            x:Name="PairButton"
+            Grid.Row="3"
+            HorizontalAlignment="Right"
+            Command="{x:Bind ViewModel.PairCommand}"
+            Content="{x:Bind strings:Resources.AirPlayPair}"
+            Style="{StaticResource AccentButtonStyle}"
+            Visibility="{x:Bind ViewModel.IsSelectedRendererUnpaired, Mode=OneWay}" />
 
         <Button
             x:Name="StopCastingButton"
@@ -121,6 +132,7 @@
                         <Setter Target="DiscoverProgressBar.Visibility" Value="Collapsed" />
                         <Setter Target="RendererList.Visibility" Value="Collapsed" />
                         <Setter Target="CastButton.Visibility" Value="Collapsed" />
+                        <Setter Target="PairButton.Visibility" Value="Collapsed" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
