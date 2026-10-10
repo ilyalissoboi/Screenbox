@@ -66,6 +66,7 @@ end.
    the last known position**; it does not resume local playback.
 4. **Library delivery:** a **local package feed** for now; publishing on
    nuget.org is deferred until end-to-end casting is confirmed locally.
+   Refined 2026-10-10 (decision 8).
 5. **Play queue while casting:** by default, when a cast item reaches its end,
    Screenbox **casts the next item in the queue**.
 6. **Upstream:** the eventual goal is a PR to `huynhsontung/Screenbox`, so the
@@ -78,6 +79,11 @@ end.
    refusal, not by a list in Screenbox. Chosen over "remux MKV, play MP4
    directly", which has more receiver testing behind it, for one code path,
    subtitles from MP4 files, and AC-3/E-AC-3 in MP4.
+8. **Package source for CI:** a GitHub runner has no local feed, so the
+   package is published as a **GitHub prerelease** asset on send-airplay2
+   (each release approved by the user) and downloaded into the fork's feed
+   folder before restore, rather than committing the package or publishing on
+   nuget.org early.
 
 ## Proposed design (engineering proposals)
 
@@ -298,13 +304,20 @@ reads the file.
   referenced by `Screenbox.Core`. The native DLLs link the app C runtime
   (VCLibs), which the MSIX tooling already declares. The remux adds no
   dependency.
-- **For now a local feed** (user decision 4): a script in send-airplay2 builds
-  the three UWP architectures and packs the package into a folder, and the
-  fork's `nuget.config` adds that folder as a source next to nuget.org (proposed:
-  the sibling checkout's `..\send-airplay2\packages-local`, so it works with
-  both repositories side by side). Before an upstream PR the package moves to
-  nuget.org and that source is removed, since upstream restores only from
-  nuget.org.
+- **For now a local feed** (user decisions 4 and 8):
+  - send-airplay2's `scripts/pack_nuget.ps1` packs the package; its CI packs
+    all three architectures, and that package is published as a GitHub
+    prerelease tagged `nuget-v<version>`.
+  - The fork's `nuget.config` adds the in-repo folder `packages-airplay` as a
+    source next to nuget.org; package files there are not committed.
+  - `scripts/Get-AirPlayPackage.ps1` places the version `Screenbox.Core.csproj`
+    references there before a restore: it keeps a local pack already in the
+    folder, or downloads the prerelease asset and accepts it only with the
+    SHA-256 recorded in the script. The test and Copilot setup workflows run
+    it first.
+  - Before an upstream PR the package moves to nuget.org and the folder,
+    source and script are removed, since upstream restores only from
+    nuget.org.
 - `NOTICE.md` gains send-airplay2 (Apache-2.0), OpenSSL (Apache-2.0), Botan
   (BSD-2-Clause) and Boost (BSL-1.0).
 - The Windows App Certification Kit passed the library's test app except one
