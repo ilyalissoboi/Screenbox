@@ -236,7 +236,10 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
             // SetCurrentItem, then directly); one request per item is enough.
             lock (_gate)
             {
-                if (value == _item || (_hasRequestedItem && value == _requestedItem)) return;
+                // Compared with the item last asked for, so going back to the item still
+                // on screen while another one starts is a request too.
+                PlaybackItem? current = _hasRequestedItem ? _requestedItem : _item;
+                if (value == current) return;
                 _requestedItem = value;
                 _hasRequestedItem = true;
             }
@@ -320,6 +323,13 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         // start position now rather than after the first status.
         TimeSpan position = Position;
         PositionChanged?.Invoke(this, new ValueChangedEventArgs<TimeSpan>(position, position));
+        TimeSpan duration = NaturalDuration;
+        if (duration > TimeSpan.Zero)
+        {
+            // The previous item's length would otherwise stay on the seek bar when the
+            // receiver's duration is within tolerance of this one's.
+            NaturalDurationChanged?.Invoke(this, new ValueChangedEventArgs<TimeSpan>(duration, duration));
+        }
         CancellationToken token = _stop.Token;
         Task.Factory.StartNew(() => Watch(token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }

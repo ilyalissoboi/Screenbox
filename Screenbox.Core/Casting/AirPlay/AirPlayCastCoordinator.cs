@@ -220,12 +220,18 @@ public sealed class AirPlayCastCoordinator
         player.StartWatching();
     }
 
-    /// <summary>Detaches the active player and disposes its cast; the player stays swapped in.</summary>
-    private AirPlayMediaPlayer? Retire()
+    /// <summary>
+    /// Detaches the active player and disposes its cast; the player stays swapped
+    /// in. While moving to another item it keeps taking requests
+    /// (<paramref name="keepRequests"/>): it stays the active player for the
+    /// seconds the next cast takes to start, and Next, Stop or another item chosen
+    /// then must not be lost.
+    /// </summary>
+    private AirPlayMediaPlayer? Retire(bool keepRequests = false)
     {
         if (_player is not { } player) return null;
         player.CastEnded -= OnCastEnded;
-        player.ItemRequested -= OnItemRequested;
+        if (!keepRequests) player.ItemRequested -= OnItemRequested;
         player.StopWatching();
         if (_cast is { } cast) DisposeInBackground(cast);
         _cast = null;
@@ -312,7 +318,7 @@ public sealed class AirPlayCastCoordinator
 
     private async Task CastOneNextAsync(PlaybackItem item, TimeSpan position)
     {
-        if (_renderer is not { } renderer || Retire() is not { } previous) return;
+        if (_renderer is not { } renderer || Retire(keepRequests: true) is not { } previous) return;
         _logger.LogInformation("AirPlay cast moves to another item");
         (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position);
 
@@ -343,6 +349,7 @@ public sealed class AirPlayCastCoordinator
             return;
         }
 
+        previous.ItemRequested -= OnItemRequested;
         Activate(new AirPlayMediaPlayer(previous.LocalPlayer, cast, item, position, item.Duration ?? TimeSpan.Zero,
             previous.NaturalVideoWidth, previous.NaturalVideoHeight, previous.Volume, previous.IsMuted, _logger), cast);
     }
@@ -417,10 +424,17 @@ public sealed class AirPlayCastCoordinator
             vlcPlayer.PlaybackStateChanged -= OnStateChanged;
         }
 
-        if (vlcPlayer.PlaybackItem != item) return;
-        vlcPlayer.Pause();
-        if (position > TimeSpan.Zero) vlcPlayer.Position = position;
-        vlcPlayer.IsMuted = wasMuted;
+        try
+        {
+            // Another item may have been chosen meanwhile; it plays as chosen, only unmuted.
+            if (vlcPlayer.PlaybackItem != item) return;
+            vlcPlayer.Pause();
+            if (position > TimeSpan.Zero) vlcPlayer.Position = position;
+        }
+        finally
+        {
+            vlcPlayer.IsMuted = wasMuted;
+        }
     }
 
     private void Swap(IMediaPlayer player)
