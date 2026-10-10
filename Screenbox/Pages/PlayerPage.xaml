@@ -293,9 +293,17 @@
             Grid.Row="0"
             Grid.RowSpan="3"
             Grid.Column="0"
-            Background="{ThemeResource SmokeFillColorDefaultBrush}"
             IsHitTestVisible="False"
             Visibility="{x:Bind ViewModel.AirPlayCastingDeviceName, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}">
+            <!--  In-app acrylic blurs the still frame behind the label; it falls back to a dark fill when transparency effects are off.  -->
+            <Grid.Background>
+                <media:AcrylicBrush
+                    BackgroundSource="Backdrop"
+                    FallbackColor="#E6000000"
+                    TintColor="Black"
+                    TintLuminosityOpacity="0.6"
+                    TintOpacity="0.35" />
+            </Grid.Background>
             <StackPanel
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"

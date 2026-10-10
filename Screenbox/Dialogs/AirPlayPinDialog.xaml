@@ -8,21 +8,69 @@
     CloseButtonText="{x:Bind strings:Resources.Cancel}"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="False"
+    Opened="OnOpened"
     PrimaryButtonText="{x:Bind strings:Resources.AirPlayPair}"
     Style="{StaticResource DefaultContentDialogStyle}"
     mc:Ignorable="d">
 
-    <StackPanel Spacing="12">
+    <ContentDialog.Resources>
+        <Style x:Key="PinDigitTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Width" Value="52" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="MaxLength" Value="1" />
+            <Setter Property="InputScope" Value="Number" />
+            <Setter Property="IsSpellCheckEnabled" Value="False" />
+            <Setter Property="IsTextPredictionEnabled" Value="False" />
+        </Style>
+    </ContentDialog.Resources>
+
+    <StackPanel Spacing="16">
         <TextBlock
             x:Name="PromptText"
             Text="{x:Bind strings:Resources.AirPlayPinDialogText}"
             TextWrapping="Wrap" />
-        <PasswordBox
-            x:Name="PinBox"
-            AutomationProperties.LabeledBy="{x:Bind PromptText}"
-            InputScope="NumericPin"
-            MaxLength="8"
-            PasswordChanged="PinBox_OnPasswordChanged"
-            PlaceholderText="{x:Bind strings:Resources.AirPlayPinPlaceholder}" />
+        <StackPanel
+            HorizontalAlignment="Center"
+            FlowDirection="LeftToRight"
+            Orientation="Horizontal"
+            Spacing="8">
+            <TextBox
+                x:Name="Digit0"
+                AutomationProperties.Name="{x:Bind strings:Resources.AirPlayPinDigitName(1, 4)}"
+                BeforeTextChanging="Digit_OnBeforeTextChanging"
+                GotFocus="Digit_OnGotFocus"
+                KeyDown="Digit_OnKeyDown"
+                Paste="Digit_OnPaste"
+                Style="{StaticResource PinDigitTextBoxStyle}"
+                TextChanged="Digit_OnTextChanged" />
+            <TextBox
+                x:Name="Digit1"
+                AutomationProperties.Name="{x:Bind strings:Resources.AirPlayPinDigitName(2, 4)}"
+                BeforeTextChanging="Digit_OnBeforeTextChanging"
+                GotFocus="Digit_OnGotFocus"
+                KeyDown="Digit_OnKeyDown"
+                Paste="Digit_OnPaste"
+                Style="{StaticResource PinDigitTextBoxStyle}"
+                TextChanged="Digit_OnTextChanged" />
+            <TextBox
+                x:Name="Digit2"
+                AutomationProperties.Name="{x:Bind strings:Resources.AirPlayPinDigitName(3, 4)}"
+                BeforeTextChanging="Digit_OnBeforeTextChanging"
+                GotFocus="Digit_OnGotFocus"
+                KeyDown="Digit_OnKeyDown"
+                Paste="Digit_OnPaste"
+                Style="{StaticResource PinDigitTextBoxStyle}"
+                TextChanged="Digit_OnTextChanged" />
+            <TextBox
+                x:Name="Digit3"
+                AutomationProperties.Name="{x:Bind strings:Resources.AirPlayPinDigitName(4, 4)}"
+                BeforeTextChanging="Digit_OnBeforeTextChanging"
+                GotFocus="Digit_OnGotFocus"
+                KeyDown="Digit_OnKeyDown"
+                Paste="Digit_OnPaste"
+                Style="{StaticResource PinDigitTextBoxStyle}"
+                TextChanged="Digit_OnTextChanged" />
+        </StackPanel>
     </StackPanel>
 </ContentDialog>

@@ -1197,10 +1197,11 @@
     <comment>#Format[String name]</comment>
   </data>
   <data name="AirPlayPinDialogText" xml:space="preserve">
-    <value>Enter the PIN shown on your TV.</value>
+    <value>Enter the 4-digit PIN shown on your TV.</value>
   </data>
-  <data name="AirPlayPinPlaceholder" xml:space="preserve">
-    <value>PIN</value>
+  <data name="AirPlayPinDigitName" xml:space="preserve">
+    <value>PIN digit {0} of {1}</value>
+    <comment>#Format[Int32 position, Int32 count]</comment>
   </data>
   <data name="AirPlayPairedNotificationTitle" xml:space="preserve">
     <value>Paired with {0}</value>
