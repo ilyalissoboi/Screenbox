@@ -76,6 +76,9 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.PlaylistRenamed => Strings.Resources.PlaylistRenamedNotificationTitle(title ?? string.Empty),
             NotificationKind.PlaylistItemsAdded when numericValue is double count => Strings.Resources.PlaylistItemsAddedNotificationTitle(count, title ?? string.Empty),
             NotificationKind.ResumePosition => Strings.Resources.ResumePositionNotificationTitle,
+            NotificationKind.AirPlayPaired => Strings.Resources.AirPlayPairedNotificationTitle(title ?? string.Empty),
+            NotificationKind.AirPlayPinRejected or NotificationKind.AirPlayPairingConnectionFailed
+                or NotificationKind.AirPlayPairingFailed => Strings.Resources.AirPlayPairingFailedNotificationTitle,
             _ => null,
         };
     }
@@ -95,6 +98,8 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.SubtitleLoadFailed => message,
             NotificationKind.FrameSaveFailed => message,
             NotificationKind.SubtitleAdded => message,
+            NotificationKind.AirPlayPinRejected => Strings.Resources.AirPlayPinRejectedMessage,
+            NotificationKind.AirPlayPairingConnectionFailed => Strings.Resources.AirPlayPairingConnectionFailedMessage,
             _ => null,
         };
     }

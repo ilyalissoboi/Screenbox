@@ -147,6 +147,7 @@ sealed partial class App : Application
 
         // Services
         services.AddSingleton<IVlcDialogService, VlcDialogService>();
+        services.AddSingleton<IAirPlayPinDialogService, AirPlayPinDialogService>();
         services.AddSingleton<INavigationService, NavigationService>(_ => new NavigationService(
             new KeyValuePair<Type, Type>(typeof(HomePageViewModel), typeof(HomePage)),
             new KeyValuePair<Type, Type>(typeof(PlaylistsPageViewModel), typeof(PlaylistsPage)),
