@@ -344,12 +344,21 @@ checked on the TV where it touches receiver behavior.
 2. **Discovery:** AirPlay receivers in the cast flyout next to Chromecast
    devices (listing only).
 3. **Pairing:** PasswordVault store, PIN dialog, profile naming.
-4. **Casting:**
-   - `AirPlayMediaPlayer` and the player swap;
-   - the system media transport controls change;
-   - start and end handling, stopping at the last position;
-   - the end-of-item rules and casting the next queue item;
-   - the casting overlay and messages.
+4. **Casting**, in two PRs:
+   - **4a:** `AirPlayMediaPlayer` and the player swap; start and end handling,
+     stopping at the last position; the start messages.
+   - **4b:** the end-of-item rules and casting the next queue item; the system
+     media transport controls change; the casting overlay.
+
+   Receiver behaviour found in 4a (Apple TV 4K, tvOS 26.6):
+   - Right after a seek, and right after a cast starts mid-file, the TV
+     briefly reports the old position. The player ignores far-off positions
+     until one is near the target.
+   - The TV reports Loading after each seek, so that state does not change
+     the play/pause button.
+   - Its duration of the remuxed HLS differs from VLC's by a fraction of a
+     second, so VLC's duration is kept unless they differ by more than a
+     second.
 5. **Follow-ups:** forget device; nuget.org publishing and removing the local
    feed before the upstream PR.
 
