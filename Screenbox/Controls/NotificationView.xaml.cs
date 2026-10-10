@@ -83,7 +83,8 @@ public sealed partial class NotificationView : UserControl
                 or NotificationKind.AirPlayCastFileUnreadable or NotificationKind.AirPlayCastConnectionFailed
                 or NotificationKind.AirPlayCastPairingInvalid or NotificationKind.AirPlayCastFailed
                 => Strings.Resources.AirPlayCastFailedNotificationTitle,
-            NotificationKind.AirPlayCastEnded => Strings.Resources.AirPlayCastEndedNotificationTitle,
+            NotificationKind.AirPlayCastEnded or NotificationKind.AirPlayNextItemNotCast
+                => Strings.Resources.AirPlayCastEndedNotificationTitle,
             _ => null,
         };
     }
@@ -111,6 +112,7 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.AirPlayCastConnectionFailed => Strings.Resources.AirPlayCastConnectionFailedMessage,
             NotificationKind.AirPlayCastPairingInvalid => Strings.Resources.AirPlayCastPairingInvalidMessage,
             NotificationKind.AirPlayCastEnded => Strings.Resources.AirPlayCastEndedMessage,
+            NotificationKind.AirPlayNextItemNotCast => Strings.Resources.AirPlayNextItemNotCastMessage,
             _ => null,
         };
     }

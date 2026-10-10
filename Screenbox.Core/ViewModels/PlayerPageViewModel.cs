@@ -46,6 +46,13 @@ public sealed partial class PlayerPageViewModel : ObservableRecipient,
     [ObservableProperty] public partial bool ControlsHidden { get; set; }
     [ObservableProperty] public partial bool IsPlaying { get; set; }
     [ObservableProperty] public partial bool IsOpening { get; set; }
+
+    /// <summary>
+    /// The receiver's name while an item is cast with AirPlay, otherwise null. The
+    /// video area then shows the frame from when the cast started, so the page
+    /// shows a "Casting to" overlay over it. Network-supplied text.
+    /// </summary>
+    [ObservableProperty] public partial string? AirPlayCastingDeviceName { get; set; }
     [ObservableProperty] public partial bool AudioOnly { get; set; }
     [ObservableProperty] public partial WindowViewMode ViewMode { get; set; }
     [ObservableProperty] public partial NavigationViewDisplayMode NavigationViewDisplayMode { get; set; }
@@ -118,7 +125,7 @@ public sealed partial class PlayerPageViewModel : ObservableRecipient,
 
     public PlayerPageViewModel(IWindowService windowService,
         ISettingsService settingsService, IFilesService filesService, PlayerContext playerContext,
-        INavigationService navigationService)
+        INavigationService navigationService, CastContext castContext)
     {
         _windowService = windowService;
         _settingsService = settingsService;
@@ -136,6 +143,12 @@ public sealed partial class PlayerPageViewModel : ObservableRecipient,
         // Strong reference handlers. No need to unsubscribe since PlayerPageViewModel has the same lifetime as the app.
         FocusManager.GotFocus += FocusManagerOnFocusChanged;
         navigationService.Navigated += OnNavigationServiceNavigated;
+        castContext.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(CastContext.ActiveRenderer)) return;
+            string? name = castContext.ActiveRenderer is { Kind: RendererKind.AirPlay } renderer ? renderer.Name : null;
+            _dispatcherQueue.TryEnqueue(() => AirPlayCastingDeviceName = name);
+        };
 
         if (MediaPlayer != null)
         {

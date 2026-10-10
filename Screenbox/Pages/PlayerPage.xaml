@@ -287,6 +287,43 @@
             DoubleTapped="VideoView_OnDoubleTapped"
             ManipulationCompleted="VideoView_OnManipulationCompleted" />
 
+        <!--  While an item is cast with AirPlay, the video area keeps the frame from when the cast started.  -->
+        <Grid
+            x:Name="AirPlayCastingOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            Grid.Column="0"
+            Background="{ThemeResource SmokeFillColorDefaultBrush}"
+            IsHitTestVisible="False"
+            Visibility="{x:Bind ViewModel.AirPlayCastingDeviceName, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}">
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="8">
+                <FontIcon
+                    HorizontalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="48"
+                    Foreground="White"
+                    Glyph="&#xEC15;" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="White"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind strings:Resources.CastingTo}" />
+                <TextBlock
+                    MaxWidth="480"
+                    HorizontalAlignment="Center"
+                    Foreground="White"
+                    MaxLines="2"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.AirPlayCastingDeviceName, Mode=OneWay}"
+                    TextAlignment="Center"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
         <Button
             x:Name="HiddenButton"
             Grid.Row="0"

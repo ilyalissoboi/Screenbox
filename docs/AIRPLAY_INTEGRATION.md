@@ -359,8 +359,19 @@ checked on the TV where it touches receiver behavior.
    - Its duration of the remuxed HLS differs from VLC's by a fraction of a
      second, so VLC's duration is kept unless they differ by more than a
      second.
-5. **Follow-ups:** forget device; nuget.org publishing and removing the local
-   feed before the upstream PR.
+
+   Found in 4b (user, same receiver):
+   - Each queue item is its own cast, so the Apple TV shows no playlist, and
+     its remote cannot skip between items. Next and Previous work from
+     Screenbox and the Windows media controls.
+   - An item the remux refuses (for example, DTS audio) ends casting there:
+     Screenbox pauses on it locally, with a message.
+5. **Follow-ups:**
+   - forget device;
+   - nuget.org publishing, and removing the local feed before the upstream PR;
+   - skipping items from the TV remote, if the receiver can send next and
+     previous to the sender (MRP research, with sender-side subtitle
+     selection).
 
 Tests:
 - **Pure logic in `Screenbox.Core.Tests`:** profile naming, end-of-cast position

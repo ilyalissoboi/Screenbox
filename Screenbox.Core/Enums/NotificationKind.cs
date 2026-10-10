@@ -36,4 +36,5 @@ public enum NotificationKind
     AirPlayCastPairingInvalid,
     AirPlayCastFailed,
     AirPlayCastEnded,
+    AirPlayNextItemNotCast,
 }
