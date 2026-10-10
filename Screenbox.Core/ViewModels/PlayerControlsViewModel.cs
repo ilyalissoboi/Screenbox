@@ -135,6 +135,11 @@ public sealed partial class PlayerControlsViewModel : ObservableRecipient,
         {
             MediaPlayer.PlaybackStateChanged += OnPlaybackStateChanged;
             MediaPlayer.NaturalVideoSizeChanged += OnNaturalVideoSizeChanged;
+            // A swapped-in player (VLC back after an AirPlay cast, for example) raises no
+            // state change for the state it is already in; read it now, or the play/pause
+            // button keeps the old player's state and toggles the wrong way.
+            OnPlaybackStateChanged(MediaPlayer, null);
+            OnNaturalVideoSizeChanged(MediaPlayer, null);
         }
     }
 

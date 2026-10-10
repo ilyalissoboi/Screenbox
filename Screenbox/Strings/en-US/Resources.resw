@@ -1215,5 +1215,29 @@
   <data name="AirPlayPairingConnectionFailedMessage" xml:space="preserve">
     <value>Make sure the TV is on and connected to the same network as this device.</value>
   </data>
+  <data name="AirPlayCastFailedNotificationTitle" xml:space="preserve">
+    <value>Couldn't cast with AirPlay</value>
+  </data>
+  <data name="AirPlayCastNotLocalFileMessage" xml:space="preserve">
+    <value>Only files on this device can be cast with AirPlay.</value>
+  </data>
+  <data name="AirPlayCastFormatUnsupportedMessage" xml:space="preserve">
+    <value>This video's format can't be cast with AirPlay.</value>
+  </data>
+  <data name="AirPlayCastFileUnreadableMessage" xml:space="preserve">
+    <value>This file couldn't be read for AirPlay. It may be damaged.</value>
+  </data>
+  <data name="AirPlayCastConnectionFailedMessage" xml:space="preserve">
+    <value>AirPlay couldn't connect back to this device. If your network is set to Public in Windows settings, change it to Private and try again.</value>
+  </data>
+  <data name="AirPlayCastPairingInvalidMessage" xml:space="preserve">
+    <value>Pairing with this TV is no longer valid. Select Pair to pair again.</value>
+  </data>
+  <data name="AirPlayCastEndedNotificationTitle" xml:space="preserve">
+    <value>Stopped casting</value>
+  </data>
+  <data name="AirPlayCastEndedMessage" xml:space="preserve">
+    <value>Playback is paused here at the last position.</value>
+  </data>
 </root>
 

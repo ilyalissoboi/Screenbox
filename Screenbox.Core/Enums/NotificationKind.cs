@@ -28,4 +28,12 @@ public enum NotificationKind
     AirPlayPinRejected,
     AirPlayPairingConnectionFailed,
     AirPlayPairingFailed,
+
+    AirPlayCastNotLocalFile,
+    AirPlayCastFormatUnsupported,
+    AirPlayCastFileUnreadable,
+    AirPlayCastConnectionFailed,
+    AirPlayCastPairingInvalid,
+    AirPlayCastFailed,
+    AirPlayCastEnded,
 }

@@ -29,4 +29,10 @@ public interface IAirPlayPairingService
     /// UI work itself.
     /// </param>
     Task<AirPlayPairingResult> PairAsync(Renderer renderer, Func<Task<string?>> requestPin);
+
+    /// <summary>
+    /// Deletes the local credentials of an AirPlay renderer, so it can be paired
+    /// again. The receiver's own pairing list is unchanged.
+    /// </summary>
+    void Forget(Renderer renderer);
 }

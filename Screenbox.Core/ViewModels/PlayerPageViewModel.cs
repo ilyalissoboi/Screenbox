@@ -210,6 +210,8 @@ public sealed partial class PlayerPageViewModel : ObservableRecipient,
         {
             MediaPlayer.PlaybackStateChanged += OnStateChanged;
             MediaPlayer.NaturalVideoSizeChanged += OnNaturalVideoSizeChanged;
+            // A swapped-in player raises no state change for the state it is already in.
+            OnStateChanged(MediaPlayer, null);
         }
     }
 

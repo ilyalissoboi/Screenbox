@@ -79,6 +79,11 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.AirPlayPaired => Strings.Resources.AirPlayPairedNotificationTitle(title ?? string.Empty),
             NotificationKind.AirPlayPinRejected or NotificationKind.AirPlayPairingConnectionFailed
                 or NotificationKind.AirPlayPairingFailed => Strings.Resources.AirPlayPairingFailedNotificationTitle,
+            NotificationKind.AirPlayCastNotLocalFile or NotificationKind.AirPlayCastFormatUnsupported
+                or NotificationKind.AirPlayCastFileUnreadable or NotificationKind.AirPlayCastConnectionFailed
+                or NotificationKind.AirPlayCastPairingInvalid or NotificationKind.AirPlayCastFailed
+                => Strings.Resources.AirPlayCastFailedNotificationTitle,
+            NotificationKind.AirPlayCastEnded => Strings.Resources.AirPlayCastEndedNotificationTitle,
             _ => null,
         };
     }
@@ -100,6 +105,12 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.SubtitleAdded => message,
             NotificationKind.AirPlayPinRejected => Strings.Resources.AirPlayPinRejectedMessage,
             NotificationKind.AirPlayPairingConnectionFailed => Strings.Resources.AirPlayPairingConnectionFailedMessage,
+            NotificationKind.AirPlayCastNotLocalFile => Strings.Resources.AirPlayCastNotLocalFileMessage,
+            NotificationKind.AirPlayCastFormatUnsupported => Strings.Resources.AirPlayCastFormatUnsupportedMessage,
+            NotificationKind.AirPlayCastFileUnreadable => Strings.Resources.AirPlayCastFileUnreadableMessage,
+            NotificationKind.AirPlayCastConnectionFailed => Strings.Resources.AirPlayCastConnectionFailedMessage,
+            NotificationKind.AirPlayCastPairingInvalid => Strings.Resources.AirPlayCastPairingInvalidMessage,
+            NotificationKind.AirPlayCastEnded => Strings.Resources.AirPlayCastEndedMessage,
             _ => null,
         };
     }
