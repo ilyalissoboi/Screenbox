@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LibVLCSharp.Shared;
 using Microsoft.Extensions.Logging;
+using Screenbox.Core.Casting.AirPlay;
 using Screenbox.Core.Playback;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -60,8 +61,14 @@ public sealed partial class PlayerService : IPlayerService
 
     public PlaybackItem CreatePlaybackItem(IMediaPlayer player, object source, params string[] options)
     {
-        if (player is not VlcMediaPlayer vlcMediaPlayer)
-            throw new NotSupportedException("Only VlcMediaPlayer is supported");
+        // While an item is cast with AirPlay the active player is not VLC, but the play
+        // queue still creates its next items; they are VLC items of the paused local player.
+        VlcMediaPlayer vlcMediaPlayer = player switch
+        {
+            VlcMediaPlayer vlc => vlc,
+            AirPlayMediaPlayer airPlay => airPlay.LocalPlayer,
+            _ => throw new NotSupportedException("Only VlcMediaPlayer is supported"),
+        };
         Media media = CreateMedia(vlcMediaPlayer, source, options);
         return new PlaybackItem(source, media);
     }

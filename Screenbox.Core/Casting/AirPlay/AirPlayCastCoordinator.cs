@@ -123,7 +123,7 @@ public sealed class AirPlayCastCoordinator
         _vlcPlayer = vlcPlayer;
         _renderer = renderer;
         _castContext.ActiveRenderer = renderer;
-        Activate(new AirPlayMediaPlayer(cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
+        Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
             vlcPlayer.NaturalVideoHeight, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
         _logger.LogInformation("AirPlay cast started");
         return AirPlayCastResult.Started;
@@ -343,7 +343,7 @@ public sealed class AirPlayCastCoordinator
             return;
         }
 
-        Activate(new AirPlayMediaPlayer(cast, item, position, item.Duration ?? TimeSpan.Zero,
+        Activate(new AirPlayMediaPlayer(previous.LocalPlayer, cast, item, position, item.Duration ?? TimeSpan.Zero,
             previous.NaturalVideoWidth, previous.NaturalVideoHeight, previous.Volume, previous.IsMuted, _logger), cast);
     }
 

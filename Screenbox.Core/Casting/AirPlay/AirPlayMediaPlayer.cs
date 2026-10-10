@@ -100,6 +100,7 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     private DateTimeOffset _seekDeadline;
     private readonly PlaybackItem _item;
 
+    /// <param name="localPlayer">The paused VLC player this player stands in for.</param>
     /// <param name="cast">A started cast; the coordinator keeps ownership.</param>
     /// <param name="item">The item being cast.</param>
     /// <param name="startPosition">Where the cast started.</param>
@@ -109,9 +110,10 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
     /// <param name="volume">The local volume, reported unchanged while casting.</param>
     /// <param name="isMuted">The local mute state, reported unchanged while casting.</param>
     /// <param name="logger">Receives fixed-field diagnostics only.</param>
-    internal AirPlayMediaPlayer(Cast cast, PlaybackItem item, TimeSpan startPosition, TimeSpan naturalDuration,
+    internal AirPlayMediaPlayer(VlcMediaPlayer localPlayer, Cast cast, PlaybackItem item, TimeSpan startPosition, TimeSpan naturalDuration,
         uint naturalVideoWidth, uint naturalVideoHeight, double volume, bool isMuted, ILogger logger)
     {
+        LocalPlayer = localPlayer;
         _cast = cast;
         _logger = logger;
         _item = item;
@@ -126,6 +128,13 @@ public sealed partial class AirPlayMediaPlayer : IMediaPlayer
         Volume = volume;
         IsMuted = isMuted;
     }
+
+    /// <summary>
+    /// The paused VLC player this player stands in for. Items the play queue
+    /// creates while casting are VLC items made with it, so they can be played
+    /// locally again and their files cast.
+    /// </summary>
+    internal VlcMediaPlayer LocalPlayer { get; }
 
     public bool CanPause => true;
 
