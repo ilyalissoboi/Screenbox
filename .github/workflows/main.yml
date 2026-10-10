@@ -53,6 +53,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-test-
 
+      - name: Get the SendAirPlay2 package
+        run: .\scripts\Get-AirPlayPackage.ps1
+
       - name: Build tests
         run: msbuild Screenbox.Core.Tests\Screenbox.Core.Tests.csproj -p:Configuration=Release -p:Platform=x64 -p:OutDir=C:\BuildOutput\ -restore
 

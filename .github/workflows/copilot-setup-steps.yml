@@ -32,6 +32,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
 
+    - name: Get the SendAirPlay2 package
+      shell: pwsh
+      run: .\scripts\Get-AirPlayPackage.ps1
+
     - name: Restore nuget packages
       shell: pwsh
       run: msbuild Screenbox.slnx -t:restore -p:RestoreConfigFile=nuget.config -p:RestoreLockedMode=false -p:Platform=x64 -p:Configuration=Release
