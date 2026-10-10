@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Screenbox.Core.Casting.AirPlay;
 using Screenbox.Core.Contexts;
 using Screenbox.Core.Coordinators;
 using Screenbox.Core.Factories;
@@ -66,6 +67,7 @@ public static class ServiceHelpers
         // Coordinators
         services.AddSingleton<ILibraryCoordinator, LibraryCoordinator>();
         services.AddSingleton<IPlayQueueCoordinator, PlayQueueCoordinator>();
+        services.AddSingleton<AirPlayCastCoordinator>();
         services.AddSingleton<IPlaybackProgressTracker, PlaybackProgressTracker>();
 
         // Services

@@ -87,6 +87,20 @@ public sealed class AirPlayPairingService : IAirPlayPairingService
         });
     }
 
+    /// <inheritdoc/>
+    public void Forget(Renderer renderer)
+    {
+        if (renderer.AirPlayReceiver is not { } receiver) return;
+        try
+        {
+            Pairing.ForgetProfile(AirPlayProfiles.ForReceiver(receiver.Id), new PasswordVaultCredentialStore());
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning("AirPlay credential removal failed: {ErrorType}", e.GetType().Name);
+        }
+    }
+
     /// <summary>
     /// The binding's PIN reader: waits on this pairing thread for the PIN and
     /// copies it into the binding's buffer, which the binding wipes afterwards.

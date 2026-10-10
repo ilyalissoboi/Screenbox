@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -38,7 +39,14 @@ public sealed partial class CastControlViewModel : ObservableObject
     /// <summary>Whether a pairing is in progress.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CastCommand))]
     public partial bool IsPairing { get; set; }
+
+    /// <summary>Whether an AirPlay cast is starting (the TV may take several seconds).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CastCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    public partial bool IsCastStarting { get; set; }
 
     [ObservableProperty] public partial Renderer? CastingDevice { get; set; }
     [ObservableProperty] public partial bool IsCasting { get; set; }
@@ -50,26 +58,38 @@ public sealed partial class CastControlViewModel : ObservableObject
     private readonly ICastService _castService;
     private readonly IAirPlayPairingService _airPlayPairingService;
     private readonly IAirPlayPinDialogService _airPlayPinDialogService;
+    private readonly AirPlayCastCoordinator _airPlayCastCoordinator;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ILogger<CastControlViewModel> _logger;
 
     public CastControlViewModel(PlayerContext playerContext, CastContext castContext, ICastService castService,
         IAirPlayPairingService airPlayPairingService, IAirPlayPinDialogService airPlayPinDialogService,
-        ILogger<CastControlViewModel> logger)
+        AirPlayCastCoordinator airPlayCastCoordinator, ILogger<CastControlViewModel> logger)
     {
         _playerContext = playerContext;
         _castContext = castContext;
         _castService = castService;
         _airPlayPairingService = airPlayPairingService;
         _airPlayPinDialogService = airPlayPinDialogService;
+        _airPlayCastCoordinator = airPlayCastCoordinator;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _logger = logger;
         Renderers = new ObservableCollection<Renderer>();
+        _castContext.PropertyChanged += OnCastContextPropertyChanged;
     }
 
     public void StartDiscovering()
     {
-        if (IsCasting || MediaPlayer == null) return;
+        if (_airPlayCastCoordinator.IsCasting)
+        {
+            // This flyout may not have started the AirPlay cast; show it as the active one.
+            CastingDevice = _castContext.ActiveRenderer;
+            IsCasting = true;
+            return;
+        }
+
+        // LibVLC discovery needs the VLC player, which an AirPlay cast swaps out.
+        if (IsCasting || MediaPlayer is not VlcMediaPlayer) return;
 
         var watcher = _castService.CreateRendererWatcher(MediaPlayer);
         _castContext.RendererWatcher = watcher;
@@ -113,9 +133,15 @@ public sealed partial class CastControlViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanCast))]
-    private void Cast()
+    private async Task CastAsync()
     {
         if (SelectedRenderer == null || MediaPlayer == null) return;
+        if (SelectedRenderer.Kind is RendererKind.AirPlay)
+        {
+            await CastWithAirPlayAsync(SelectedRenderer);
+            return;
+        }
+
         _logger.LogInformation("Start casting. {RendererHash} {RendererType} {CanRenderAudio} {CanRenderVideo}",
             SelectedRenderer.Name.GetHashCode(),
             SelectedRenderer.Type,
@@ -129,8 +155,78 @@ public sealed partial class CastControlViewModel : ObservableObject
         }
     }
 
-    // AirPlay receivers can be listed and paired for now; casting to them comes with the AirPlay player.
-    private bool CanCast() => SelectedRenderer is { IsAvailable: true, Kind: RendererKind.Chromecast };
+    private bool CanCast() => SelectedRenderer switch
+    {
+        { IsAvailable: true, Kind: RendererKind.Chromecast } => true,
+        // An unpaired AirPlay receiver offers Pair instead.
+        { IsAvailable: true, Kind: RendererKind.AirPlay } => !IsSelectedRendererUnpaired && !IsPairing && !IsCastStarting,
+        _ => false,
+    };
+
+    /// <summary>
+    /// Casts the loaded item to an AirPlay receiver, and reports a failed start as
+    /// a notification. A pairing the TV no longer accepts is forgotten, so the
+    /// flyout offers Pair again.
+    /// </summary>
+    private async Task CastWithAirPlayAsync(Renderer renderer)
+    {
+        _logger.LogInformation("Start casting. {RendererType}", renderer.Type);
+        IsCastStarting = true;
+        AirPlayCastResult result;
+        try
+        {
+            result = await _airPlayCastCoordinator.StartAsync(renderer);
+        }
+        finally
+        {
+            IsCastStarting = false;
+        }
+
+        if (result is AirPlayCastResult.Started)
+        {
+            CastingDevice = renderer;
+            IsCasting = true;
+            return;
+        }
+
+        if (result is AirPlayCastResult.PairingInvalid)
+        {
+            _airPlayPairingService.Forget(renderer);
+            if (SelectedRenderer == renderer) IsSelectedRendererUnpaired = true;
+        }
+
+        NotificationKind? kind = result switch
+        {
+            AirPlayCastResult.NothingToCast or AirPlayCastResult.NotLocalFile => NotificationKind.AirPlayCastNotLocalFile,
+            AirPlayCastResult.FormatUnsupported => NotificationKind.AirPlayCastFormatUnsupported,
+            AirPlayCastResult.FileUnreadable => NotificationKind.AirPlayCastFileUnreadable,
+            AirPlayCastResult.ConnectionFailed => NotificationKind.AirPlayCastConnectionFailed,
+            AirPlayCastResult.PairingInvalid => NotificationKind.AirPlayCastPairingInvalid,
+            AirPlayCastResult.Failed => NotificationKind.AirPlayCastFailed,
+            _ => null, // Cancelled: nothing to report.
+        };
+        if (kind is { } notificationKind)
+        {
+            WeakReferenceMessenger.Default.Send(new NotificationMessage(NotificationLevel.Error, notificationKind));
+        }
+    }
+
+    /// <summary>
+    /// An AirPlay cast can end without this flyout (the TV stopped it, or the
+    /// connection dropped); return the flyout to its discovering state then.
+    /// </summary>
+    private void OnCastContextPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CastContext.ActiveRenderer) || _castContext.ActiveRenderer is not null) return;
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (IsCasting && CastingDevice is { Kind: RendererKind.AirPlay } && !_airPlayCastCoordinator.IsCasting)
+            {
+                IsCasting = false;
+                CastingDevice = null;
+            }
+        });
+    }
 
     partial void OnSelectedRendererChanged(Renderer? value)
     {
@@ -214,6 +310,16 @@ public sealed partial class CastControlViewModel : ObservableObject
     {
         if (MediaPlayer == null) return;
         _logger.LogInformation("Stop casting.");
+        if (_airPlayCastCoordinator.IsCasting)
+        {
+            // Swaps back to VLC, paused at the last position, before discovery restarts.
+            _airPlayCastCoordinator.Stop();
+            CastingDevice = null;
+            IsCasting = false;
+            StartDiscovering();
+            return;
+        }
+
         _castService.SetActiveRenderer(MediaPlayer, null);
         _castContext.ActiveRenderer = null;
         IsCasting = false;
