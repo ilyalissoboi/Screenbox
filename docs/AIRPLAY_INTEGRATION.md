@@ -84,6 +84,10 @@ end.
    (each release approved by the user) and downloaded into the fork's feed
    folder before restore, rather than committing the package or publishing on
    nuget.org early.
+9. **Pairing in the flyout:** selecting an unpaired AirPlay receiver shows
+   **Pair** in place of **Cast**. Pairing ends with a "paired" notification,
+   and the button becomes **Cast**. Until phase 4 that Cast stays disabled for
+   AirPlay. The PIN is entered in a `ContentDialog`.
 
 ## Proposed design (engineering proposals)
 
@@ -128,11 +132,16 @@ CastControl (flyout)  ──>  CastControlViewModel  ──>  ICastService
   the id's hex digits), so each Apple TV has its own pairing. Discovery identity
   is unauthenticated, but the stored credentials pin the receiver's key: a
   different device answering at that address fails authentication.
-- First cast to an unpaired receiver (`ProfileNotFound`) starts pairing: the TV
-  shows a PIN, a `ContentDialog` with a `PasswordBox` collects it, then the cast
-  continues. The PIN is cleared after use and never logged.
+- Pairing is explicit (user decision 9, implemented in phase 3): Pair replaces
+  Cast while the selected receiver has no saved credentials. The TV shows a
+  PIN, and a `ContentDialog` with a `PasswordBox` collects it. The PIN is
+  cleared after use and never logged. Pairing runs on its own thread, so it
+  does not depend on the flyout staying open.
+- A cast that fails authentication (the TV dropped the pairing) offers Pair
+  again (phase 4).
 - "Forget this AirPlay device" removes local credentials (a follow-up; the TV's
-  own pairing list is unaffected).
+  own pairing list is unaffected). Until then, the pairing can be removed in
+  Windows Credential Manager (Web Credentials; checked 2026-10-10).
 
 ### Casting and transport control
 
