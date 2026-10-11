@@ -10,6 +10,15 @@ public sealed partial class Renderer
     /// <summary>The casting pipeline this renderer belongs to.</summary>
     public RendererKind Kind { get; }
 
+    /// <summary>The kind of device, for its icon; unknown for LibVLC renderers.</summary>
+    public RendererDeviceKind DeviceKind { get; }
+
+    /// <summary>
+    /// The device's product family (for example "MacBook Pro" or "Apple TV 4K"),
+    /// shown under its name; null when not known.
+    /// </summary>
+    public string? ModelDescription { get; }
+
     public string Name { get; }
 
     public string Type { get; }
@@ -43,6 +52,7 @@ public sealed partial class Renderer
     internal Renderer(AirPlayReceiverInfo receiver)
     {
         Kind = RendererKind.AirPlay;
+        (DeviceKind, ModelDescription) = AirPlayDeviceKinds.Identify(receiver.Model);
         Name = receiver.Name;
         Type = "airplay";
         // Discovery lists only receivers that advertise AirPlay video, which carries audio too.

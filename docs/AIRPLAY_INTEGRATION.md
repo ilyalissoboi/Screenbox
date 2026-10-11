@@ -1,12 +1,68 @@
-# AirPlay casting: integration design (draft)
+# AirPlay casting: integration design
 
-Status: **design for approval, nothing implemented.** Written 2026-10-09
-against `main` at `6870eb0f`; revised 2026-10-10 for the library's HLS remux,
-the delivery decision and two review findings. It plans adding AirPlay video
-casting to Screenbox through the
+Status: **implemented through phase 4b in the fork (2026-10-11); cosmetic
+follow-ups on `feat/airplay-cosmetics`.** Written 2026-10-09 against `main` at
+`6870eb0f` and revised as the work went on. It adds AirPlay video casting to
+Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
 alongside the existing Chromecast casting. User decisions, engineering
-proposals and open questions are kept apart below.
+proposals and open questions are kept apart below; the status section records
+what is built and tested.
+
+## Implementation status (2026-10-11)
+
+| Phase | Fork PR | State |
+| --- | --- | --- |
+| Design | #1 | Merged |
+| 1: package, local feed from a GitHub prerelease, notices | #2 | Merged |
+| 2: AirPlay receivers in the cast flyout | #3 | Merged; checked on the TV |
+| 3: PIN pairing into PasswordVault, Pair in place of Cast | #4 | Merged; checked on the TV |
+| 4a: casting, player swap, start and end handling, messages | #5 | Merged; checked on the TV |
+| 4b: play queue, system media controls, casting overlay | #6 | Merged; checked on the TV |
+| Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | `feat/airplay-cosmetics` | Overlay, PIN boxes and icons checked on screen; the model line awaits the user's check |
+
+All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
+package on a Private network. The library's record of them is in
+send-airplay2's `docs/receiver-validation.md`.
+
+**Testing a development build.** Install "[Debug] Screenbox" (identity
+`Screenbox`, next to the Store app) from a real package, so its fonts and
+images are included:
+1. Build a package: `msbuild Screenbox\Screenbox.csproj -restore
+   -p:ContinuousIntegrationBuild=true -p:Configuration=Release -p:Platform=x64
+   -p:AppxPackageDir=<dir>\ -p:UapAppxPackageBuildMode=SideloadOnly
+   -p:AppxBundle=Never`.
+2. Remove the previous development registration (`Get-AppxPackage Screenbox |
+   Remove-AppxPackage`).
+3. Extract the `.msix` and register its `AppxManifest.xml` with
+   `Add-AppxPackage -Register` (Developer Mode).
+
+Registering `bin\...\AppxManifest.xml` directly leaves out the app's content
+files (the icon font, images). A pairing survives reinstalling; remove it in
+Credential Manager (Web Credentials) to pair again.
+
+**Known limitations** (as designed or found on the TV):
+- Each queue item is its own cast, so the Apple TV shows no playlist, and its
+  remote cannot skip items.
+- Files the remux refuses (DTS audio, VP9, AV1, MPEG-2, network streams) are
+  not cast; Screenbox pauses on them locally with a message.
+- Subtitle files loaded next to a video, image subtitles, and the track
+  choices made in Screenbox are not carried over. Tracks inside the file can
+  be chosen in the Apple TV's own menu.
+- Casting fails on a Public network (decision 2).
+- Only x64 was built and tested; x86 and ARM64 packages carry the native
+  libraries but were not run.
+
+**Next steps**, for the user to choose (roughly by effort):
+1. "Forget this AirPlay device" in the flyout, removing the local pairing.
+2. Validation of what is untested: x86 and ARM64 builds, a Chromecast
+   regression check, a sleeping TV, and a second receiver model.
+3. Library work (send-airplay2): MRP research on choosing subtitle tracks
+   from Screenbox and on the TV remote's next/previous; HDR in the remux's
+   playlists; growing presentations for files still being written.
+4. Before an upstream PR (decision 6): publish the package on nuget.org,
+   remove the prerelease feed folder, script and source, and review the
+   change set against upstream's contribution rules.
 
 ## What the library provides
 
@@ -134,7 +190,7 @@ CastControl (flyout)  ──>  CastControlViewModel  ──>  ICastService
   different device answering at that address fails authentication.
 - Pairing is explicit (user decision 9, implemented in phase 3): Pair replaces
   Cast while the selected receiver has no saved credentials. The TV shows a
-  PIN, and a `ContentDialog` with a `PasswordBox` collects it. The PIN is
+  PIN, and a `ContentDialog` with four one-digit boxes collects it. The PIN is
   cleared after use and never logged. Pairing runs on its own thread, so it
   does not depend on the flyout staying open.
 - A cast that fails authentication (the TV dropped the pairing) offers Pair
@@ -263,10 +319,17 @@ while casting.
 - **Does not follow:** the video area. Local VLC is paused, so the video
   element keeps the frame from when the cast started. Playing it locally in
   sync would decode the video twice and drift; not proposed.
-- **Proposed:** a "Casting to ‹receiver›" overlay over the video area while an
-  AirPlay cast is active, so the still frame does not look like a hang. The
-  cast flyout already shows "Casting to" with the device name. Chromecast's
-  presentation is not changed.
+- **Overlay (implemented):** "Casting to ‹receiver›" over the video area while
+  an AirPlay cast is active, so the still frame does not look like a hang. The
+  frame behind it is blurred with in-app acrylic, falling back to a dark fill
+  when transparency effects are off. Chromecast's presentation is not
+  changed.
+- **Flyout entries:** each AirPlay receiver shows an icon for its kind (TV,
+  speaker, laptop or desktop) and, under its advertised name, its product
+  family (for example "Apple TV 4K" or "MacBook Pro"), both from its
+  advertised model identifier. Apple-silicon Macs advertise "MacNN,M" for
+  every Mac, so their family comes from a table of Apple's published
+  identifiers; an unknown one shows "Mac" with the laptop icon.
 
 ### Messages
 
@@ -366,12 +429,9 @@ checked on the TV where it touches receiver behavior.
      Screenbox and the Windows media controls.
    - An item the remux refuses (for example, DTS audio) ends casting there:
      Screenbox pauses on it locally, with a message.
-5. **Follow-ups:**
-   - forget device;
-   - nuget.org publishing, and removing the local feed before the upstream PR;
-   - skipping items from the TV remote, if the receiver can send next and
-     previous to the sender (MRP research, with sender-side subtitle
-     selection).
+5. **Follow-ups:** see "Next steps" under Implementation status. Done
+   since: the cosmetic changes (blurred overlay, 4-digit PIN boxes, device
+   icons and the model line).
 
 Tests:
 - **Pure logic in `Screenbox.Core.Tests`:** profile naming, end-of-cast position

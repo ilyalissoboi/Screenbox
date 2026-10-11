@@ -175,7 +175,8 @@ public sealed partial class AirPlayReceiverWatcher : IDisposable
     private static IReadOnlyList<AirPlayReceiverInfo> ScanReceivers()
     {
         return Receivers.Discover(Receivers.DefaultDuration)
-            .Select(receiver => new AirPlayReceiverInfo(receiver.Id, receiver.Name, receiver.Address, receiver.Port))
+            .Select(receiver => new AirPlayReceiverInfo(receiver.Id, receiver.Name, receiver.Address, receiver.Port,
+                receiver.Model))
             .ToList();
     }
 }
