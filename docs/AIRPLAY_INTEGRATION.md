@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
-Status: **implemented through phase 4b in the fork (2026-10-11); cosmetic
-follow-ups on `feat/airplay-cosmetics`.** Written 2026-10-09 against `main` at
+Status: **implemented through phase 4b and cosmetic follow-ups in the fork
+(PRs #1-#7, 2026-10-11); Mac package update in preparation.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -19,7 +19,7 @@ what is built and tested.
 | 3: PIN pairing into PasswordVault, Pair in place of Cast | #4 | Merged; checked on the TV |
 | 4a: casting, player swap, start and end handling, messages | #5 | Merged; checked on the TV |
 | 4b: play queue, system media controls, casting overlay | #6 | Merged; checked on the TV |
-| Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | `feat/airplay-cosmetics` | Overlay, PIN boxes and icons checked on screen; the model line awaits the user's check |
+| Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -32,14 +32,38 @@ images are included:
    -p:ContinuousIntegrationBuild=true -p:Configuration=Release -p:Platform=x64
    -p:AppxPackageDir=<dir>\ -p:UapAppxPackageBuildMode=SideloadOnly
    -p:AppxBundle=Never`.
-2. Remove the previous development registration (`Get-AppxPackage Screenbox |
-   Remove-AppxPackage`).
-3. Extract the `.msix` and register its `AppxManifest.xml` with
-   `Add-AppxPackage -Register` (Developer Mode).
+2. When replacing an installed development build, use a strictly higher private
+   version in `Package.appxmanifest`; registering another layout with the same
+   version can leave the old layout selected. Keep the same development identity.
+3. Extract the `.msix` to a new layout and register its `AppxManifest.xml` with
+   `Add-AppxPackage -Register <manifest> -ForceApplicationShutdown` (Developer Mode).
+4. Check `Get-AppxPackage -Name Screenbox` for the expected version/install
+   location and verify the installed native DLL against the package's
+   `BUILD-INFO.txt`. Reopen the app and verify its loaded native DLL before
+   attributing receiver results to that build.
 
 Registering `bin\...\AppxManifest.xml` directly leaves out the app's content
-files (the icon font, images). A pairing survives reinstalling; remove it in
-Credential Manager (Web Credentials) to pair again.
+files (the icon font, images). An in-place update preserves app data, saved
+pairings and brokered file grants; do not uninstall or remove credentials just
+to update a build. Private testing version bumps are not release-version edits.
+
+**Mac update checkpoint.** send-airplay2 PR #39 is merged as `2829242`, after
+all 14 checks passed at its final head. It includes D62's URL controls and D63's
+explicit HLS EOF handling, including the event-channel closure race fix. The
+`0.3.0-ci.207` package was built on main; its binding/native source stamps and
+all x64/x86/ARM64 payload hashes were verified. The staged version/hash pins
+are prepared locally (package SHA-256
+`e52affdf9f79e20dcd00b59380c9949d1f9b11d1339307f8a2b86ad14e1ffa4d`).
+Publication approval, the fork PR and validation with that exact package remain
+pending; it is not downloadable as a prerelease yet.
+
+The user reported that the earlier private x64 candidate passed consent-time
+cancellation/recovery, video/audio near the current position, pause/resume,
+forward/backward seeks, Stop/local paused handoff and natural queue advance on
+one MacBook Pro (`Mac14,10`, macOS 26.7.1). Its installed DLL was verified after
+updating development version 1.0.0.1; its loaded DLL was not independently
+captured. These manual observations precede the review race fix and do not
+establish a pass for the final main package. Screenbox's 86 logic tests passed.
 
 **Known limitations** (as designed or found on the TV):
 - Each queue item is its own cast, so the Apple TV shows no playlist, and its
@@ -50,19 +74,18 @@ Credential Manager (Web Credentials) to pair again.
   choices made in Screenbox are not carried over. Tracks inside the file can
   be chosen in the Apple TV's own menu.
 - Casting fails on a Public network (decision 2).
-- Macs are listed (with their own icon and family) but cannot be cast to with
-  the current package: a Mac's AirPlay receiver rejects the remote-control
-  session. send-airplay2 added a fallback to URL-only controls (its D62,
-  merged after `0.3.0-ci.196`).
+- Mac casting requires the prepared `0.3.0-ci.207` package update; the fork's
+  previous pin `0.3.0-ci.196` listed Macs but could not cast to them. The Mac can
+  ask for on-screen consent again after its grant period expires. Its URL-only
+  session has no receiver-remote queue navigation or track-selection integration.
 - Only x64 was built and tested; x86 and ARM64 packages carry the native
   libraries but were not run.
 
 **Next steps**, for the user to choose (roughly by effort):
-1. Casting to a Mac: once send-airplay2 publishes a prerelease with its D62
-   (with the user's approval), pin it with its SHA-256 in
-   `Screenbox.Core.csproj` and `scripts/Get-AirPlayPackage.ps1`. Then test
-   pairing (the Mac asks for consent on screen, then shows a PIN) and
-   casting to the MacBook Pro.
+1. Complete the prepared Mac package update: publish send-airplay2's verified
+   prerelease with approval, land the fork's version/hash pins, and validate
+   the final package on the MacBook Pro. Pairing asks for consent on screen,
+   then shows a PIN; reuse the existing pairing for playback checks.
 2. "Forget this AirPlay device" in the flyout, removing the local pairing.
 3. Validation of what is untested: x86 and ARM64 builds, a Chromecast
    regression check, a sleeping TV, and a second receiver model.

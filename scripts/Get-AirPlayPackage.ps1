@@ -27,6 +27,7 @@ $ErrorActionPreference = 'Stop'
 # SHA-256 of each published prerelease asset, by package version.
 $KnownPackages = @{
     '0.3.0-ci.196' = 'f94543305baa1dff9c01e03ba3565640f723e8b61a467aae823219d573e2bb2c'
+    '0.3.0-ci.207' = 'e52affdf9f79e20dcd00b59380c9949d1f9b11d1339307f8a2b86ad14e1ffa4d'
 }
 
 $root = Split-Path -Parent $PSScriptRoot
