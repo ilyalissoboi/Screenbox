@@ -11,23 +11,23 @@ namespace Screenbox.Core.Casting.AirPlay;
 /// and its product family, shown under the receiver's own name.
 /// </summary>
 /// <remarks>
-/// Families are Apple's product names, which Apple does not translate, so they
-/// are not localized. Receivers from other makers get no family.
+/// Families are values the view maps to localized resources. Receivers from
+/// other makers get <see cref="RendererDeviceFamily.Unknown"/>.
 /// </remarks>
 internal static class AirPlayDeviceKinds
 {
-    private const string MacBookAir = "MacBook Air";
-    private const string MacBookPro = "MacBook Pro";
-    private const string IMac = "iMac";
-    private const string MacMini = "Mac mini";
-    private const string MacStudio = "Mac Studio";
-    private const string MacPro = "Mac Pro";
+    private const RendererDeviceFamily MacBookAir = RendererDeviceFamily.MacBookAir;
+    private const RendererDeviceFamily MacBookPro = RendererDeviceFamily.MacBookPro;
+    private const RendererDeviceFamily IMac = RendererDeviceFamily.IMac;
+    private const RendererDeviceFamily MacMini = RendererDeviceFamily.MacMini;
+    private const RendererDeviceFamily MacStudio = RendererDeviceFamily.MacStudio;
+    private const RendererDeviceFamily MacPro = RendererDeviceFamily.MacPro;
 
     // Apple-silicon Macs from 2022 on advertise "MacNN,M" for laptops and desktops
     // alike, so the name alone tells neither the family nor the kind. These are
     // Apple's published identifiers; any other "MacNN,M" is a "Mac" laptop, which
     // most Macs are.
-    private static readonly Dictionary<string, (RendererDeviceKind Kind, string Family)> AppleSiliconMacs =
+    private static readonly Dictionary<string, (RendererDeviceKind Kind, RendererDeviceFamily Family)> AppleSiliconMacs =
         new(StringComparer.Ordinal)
         {
             ["Mac13,1"] = (RendererDeviceKind.Desktop, MacStudio),
@@ -79,14 +79,16 @@ internal static class AirPlayDeviceKinds
     /// television without a family, because discovery lists only receivers that
     /// advertise AirPlay video.
     /// </summary>
-    internal static (RendererDeviceKind Kind, string? Family) Identify(string model)
+    internal static (RendererDeviceKind Kind, RendererDeviceFamily Family) Identify(string model)
     {
         if (model.StartsWith("AppleTV", StringComparison.Ordinal))
         {
             // AppleTV5,3 is the Apple TV HD; AppleTV6 and later are 4K models; earlier ones
             // are plain Apple TVs.
             int generation = MajorVersion(model, "AppleTV".Length);
-            string family = generation >= 6 ? "Apple TV 4K" : generation == 5 ? "Apple TV HD" : "Apple TV";
+            RendererDeviceFamily family = generation >= 6 ? RendererDeviceFamily.AppleTV4K
+                : generation == 5 ? RendererDeviceFamily.AppleTVHD
+                : RendererDeviceFamily.AppleTV;
             return (RendererDeviceKind.Television, family);
         }
 
@@ -94,22 +96,22 @@ internal static class AirPlayDeviceKinds
         {
             // AudioAccessory5 is the HomePod mini; 1 and 6 are the HomePod.
             bool isMini = MajorVersion(model, "AudioAccessory".Length) == 5;
-            return (RendererDeviceKind.Speaker, isMini ? "HomePod mini" : "HomePod");
+            return (RendererDeviceKind.Speaker, isMini ? RendererDeviceFamily.HomePodMini : RendererDeviceFamily.HomePod);
         }
 
         if (model.StartsWith("MacBookAir", StringComparison.Ordinal)) return (RendererDeviceKind.Laptop, MacBookAir);
         if (model.StartsWith("MacBookPro", StringComparison.Ordinal)) return (RendererDeviceKind.Laptop, MacBookPro);
-        if (model.StartsWith("MacBook", StringComparison.Ordinal)) return (RendererDeviceKind.Laptop, "MacBook");
-        if (model.StartsWith("iMacPro", StringComparison.Ordinal)) return (RendererDeviceKind.Desktop, "iMac Pro");
+        if (model.StartsWith("MacBook", StringComparison.Ordinal)) return (RendererDeviceKind.Laptop, RendererDeviceFamily.MacBook);
+        if (model.StartsWith("iMacPro", StringComparison.Ordinal)) return (RendererDeviceKind.Desktop, RendererDeviceFamily.IMacPro);
         if (model.StartsWith("iMac", StringComparison.Ordinal)) return (RendererDeviceKind.Desktop, IMac);
         if (model.StartsWith("Macmini", StringComparison.Ordinal)) return (RendererDeviceKind.Desktop, MacMini);
         if (model.StartsWith("MacPro", StringComparison.Ordinal)) return (RendererDeviceKind.Desktop, MacPro);
         if (model.StartsWith("Mac", StringComparison.Ordinal))
         {
-            return AppleSiliconMacs.TryGetValue(model, out var mac) ? mac : (RendererDeviceKind.Laptop, "Mac");
+            return AppleSiliconMacs.TryGetValue(model, out var mac) ? mac : (RendererDeviceKind.Laptop, RendererDeviceFamily.Mac);
         }
 
-        return (RendererDeviceKind.Television, null);
+        return (RendererDeviceKind.Television, RendererDeviceFamily.Unknown);
     }
 
     /// <summary>The number before the comma in "NameNN,M", from <paramref name="start"/>; 0 if none.</summary>

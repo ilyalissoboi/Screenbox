@@ -338,7 +338,8 @@ while casting.
   family (for example "Apple TV 4K" or "MacBook Pro"), both from its
   advertised model identifier. Apple-silicon Macs advertise "MacNN,M" for
   every Mac, so their family comes from a table of Apple's published
-  identifiers; an unknown one shows "Mac" with the laptop icon.
+  identifiers; an unknown one shows "Mac" with the laptop icon. Core reports
+  the family as a value, and the view shows it through localized resources.
 
 ### Messages
 

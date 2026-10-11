@@ -104,16 +104,17 @@ public sealed partial class AirPlayPinDialog : ContentDialog
     {
         e.Handled = true;
         int index = Array.IndexOf(_digits, (TextBox)sender);
-        DataPackageView clipboard = Clipboard.GetContent();
-        if (!clipboard.Contains(StandardDataFormats.Text)) return;
         string text;
         try
         {
+            // Any clipboard call can throw while another app holds the clipboard, and this
+            // handler is async void, so all of them stay inside the try.
+            DataPackageView clipboard = Clipboard.GetContent();
+            if (!clipboard.Contains(StandardDataFormats.Text)) return;
             text = await clipboard.GetTextAsync();
         }
         catch (Exception)
         {
-            // The clipboard can be unavailable (for example, held by another app).
             return;
         }
 

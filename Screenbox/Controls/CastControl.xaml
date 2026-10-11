@@ -5,6 +5,7 @@
     xmlns:converters="using:Screenbox.Converters"
     xmlns:core="using:Screenbox.Core"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:Screenbox.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:Screenbox.Core.Models"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
@@ -55,8 +56,8 @@
                             <TextBlock
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ModelDescription}"
-                                Visibility="{x:Bind ModelDescription, Converter={StaticResource StringVisibilityConverter}}" />
+                                Text="{x:Bind helpers:RendererLabelHelper.GetDeviceFamilyName(DeviceFamily)}"
+                                Visibility="{x:Bind helpers:RendererLabelHelper.GetDeviceFamilyVisibility(DeviceFamily)}" />
                         </StackPanel>
                     </StackPanel>
                 </DataTemplate>

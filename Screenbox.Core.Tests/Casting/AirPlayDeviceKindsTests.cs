@@ -30,25 +30,25 @@ public class AirPlayDeviceKindsTests
     }
 
     [Test]
-    [Arguments("AppleTV14,1", "Apple TV 4K")]
-    [Arguments("AppleTV6,2", "Apple TV 4K")]
-    [Arguments("AppleTV5,3", "Apple TV HD")]
-    [Arguments("AppleTV3,2", "Apple TV")]
-    [Arguments("AudioAccessory5,1", "HomePod mini")]
-    [Arguments("AudioAccessory6,1", "HomePod")]
-    [Arguments("MacBookPro18,1", "MacBook Pro")]
-    [Arguments("MacBookAir10,1", "MacBook Air")]
-    [Arguments("MacBook10,1", "MacBook")]
-    [Arguments("iMacPro1,1", "iMac Pro")]
-    [Arguments("iMac21,1", "iMac")]
-    [Arguments("Macmini9,1", "Mac mini")]
-    [Arguments("MacPro7,1", "Mac Pro")]
-    [Arguments("Mac14,9", "MacBook Pro")]
-    [Arguments("Mac15,13", "MacBook Air")]
-    [Arguments("Mac13,1", "Mac Studio")]
-    [Arguments("Mac16,10", "Mac mini")]
-    [Arguments("Mac99,1", "Mac")]
-    public async Task Identify_GivesProductFamily(string model, string family)
+    [Arguments("AppleTV14,1", RendererDeviceFamily.AppleTV4K)]
+    [Arguments("AppleTV6,2", RendererDeviceFamily.AppleTV4K)]
+    [Arguments("AppleTV5,3", RendererDeviceFamily.AppleTVHD)]
+    [Arguments("AppleTV3,2", RendererDeviceFamily.AppleTV)]
+    [Arguments("AudioAccessory5,1", RendererDeviceFamily.HomePodMini)]
+    [Arguments("AudioAccessory6,1", RendererDeviceFamily.HomePod)]
+    [Arguments("MacBookPro18,1", RendererDeviceFamily.MacBookPro)]
+    [Arguments("MacBookAir10,1", RendererDeviceFamily.MacBookAir)]
+    [Arguments("MacBook10,1", RendererDeviceFamily.MacBook)]
+    [Arguments("iMacPro1,1", RendererDeviceFamily.IMacPro)]
+    [Arguments("iMac21,1", RendererDeviceFamily.IMac)]
+    [Arguments("Macmini9,1", RendererDeviceFamily.MacMini)]
+    [Arguments("MacPro7,1", RendererDeviceFamily.MacPro)]
+    [Arguments("Mac14,9", RendererDeviceFamily.MacBookPro)]
+    [Arguments("Mac15,13", RendererDeviceFamily.MacBookAir)]
+    [Arguments("Mac13,1", RendererDeviceFamily.MacStudio)]
+    [Arguments("Mac16,10", RendererDeviceFamily.MacMini)]
+    [Arguments("Mac99,1", RendererDeviceFamily.Mac)]
+    public async Task Identify_GivesProductFamily(string model, RendererDeviceFamily family)
     {
         await Assert.That(AirPlayDeviceKinds.Identify(model).Family).IsEqualTo(family);
     }
@@ -58,7 +58,7 @@ public class AirPlayDeviceKindsTests
     [Arguments("")]
     public async Task Identify_OtherMakers_HaveNoFamily(string model)
     {
-        await Assert.That(AirPlayDeviceKinds.Identify(model).Family).IsNull();
+        await Assert.That(AirPlayDeviceKinds.Identify(model).Family).IsEqualTo(RendererDeviceFamily.Unknown);
     }
 
     [Test]
@@ -72,6 +72,6 @@ public class AirPlayDeviceKindsTests
         });
 
         await Assert.That(found[0].DeviceKind).IsEqualTo(RendererDeviceKind.Laptop);
-        await Assert.That(found[0].ModelDescription).IsEqualTo("MacBook Pro");
+        await Assert.That(found[0].DeviceFamily).IsEqualTo(RendererDeviceFamily.MacBookPro);
     }
 }
