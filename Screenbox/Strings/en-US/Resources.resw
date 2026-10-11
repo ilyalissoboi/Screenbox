@@ -1197,10 +1197,11 @@
     <comment>#Format[String name]</comment>
   </data>
   <data name="AirPlayPinDialogText" xml:space="preserve">
-    <value>Enter the PIN shown on your TV.</value>
+    <value>Enter the 4-digit PIN shown on your TV.</value>
   </data>
-  <data name="AirPlayPinPlaceholder" xml:space="preserve">
-    <value>PIN</value>
+  <data name="AirPlayPinDigitName" xml:space="preserve">
+    <value>PIN digit {0} of {1}</value>
+    <comment>#Format[Int32 position, Int32 count]</comment>
   </data>
   <data name="AirPlayPairedNotificationTitle" xml:space="preserve">
     <value>Paired with {0}</value>
@@ -1241,6 +1242,62 @@
   </data>
   <data name="AirPlayNextItemNotCastMessage" xml:space="preserve">
     <value>The next item can't be cast with AirPlay, so it is paused here.</value>
+  </data>
+  <data name="AirPlayFamilyAppleTV" xml:space="preserve">
+    <value>Apple TV</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyAppleTVHD" xml:space="preserve">
+    <value>Apple TV HD</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyAppleTV4K" xml:space="preserve">
+    <value>Apple TV 4K</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyHomePod" xml:space="preserve">
+    <value>HomePod</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyHomePodMini" xml:space="preserve">
+    <value>HomePod mini</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacBook" xml:space="preserve">
+    <value>MacBook</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacBookAir" xml:space="preserve">
+    <value>MacBook Air</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacBookPro" xml:space="preserve">
+    <value>MacBook Pro</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyIMac" xml:space="preserve">
+    <value>iMac</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyIMacPro" xml:space="preserve">
+    <value>iMac Pro</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacMini" xml:space="preserve">
+    <value>Mac mini</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacStudio" xml:space="preserve">
+    <value>Mac Studio</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMacPro" xml:space="preserve">
+    <value>Mac Pro</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
+  </data>
+  <data name="AirPlayFamilyMac" xml:space="preserve">
+    <value>Mac</value>
+    <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
   </data>
 </root>
 
