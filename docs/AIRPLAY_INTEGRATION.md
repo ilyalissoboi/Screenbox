@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#7, 2026-10-11); Mac package update in preparation.** Written 2026-10-09 against `main` at
+(PRs #1-#7, 2026-10-11); Mac package update awaiting final receiver validation.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -51,11 +51,15 @@ to update a build. Private testing version bumps are not release-version edits.
 all 14 checks passed at its final head. It includes D62's URL controls and D63's
 explicit HLS EOF handling, including the event-channel closure race fix. The
 `0.3.0-ci.207` package was built on main; its binding/native source stamps and
-all x64/x86/ARM64 payload hashes were verified. The staged version/hash pins
-are prepared locally (package SHA-256
+all x64/x86/ARM64 payload hashes were verified. The version/hash pins reference
+the published [prerelease](https://github.com/ilyalissoboi/send-airplay2/releases/tag/nuget-v0.3.0-ci.207) (package SHA-256
 `e52affdf9f79e20dcd00b59380c9949d1f9b11d1339307f8a2b86ad14e1ffa4d`).
-Publication approval, the fork PR and validation with that exact package remain
-pending; it is not downloadable as a prerelease yet.
+The user approved publication on 2026-10-11. Both the public download and a fresh
+download through `Get-AirPlayPackage.ps1` match that hash. All 14 main CI jobs,
+86/86 Screenbox logic tests and the VS 2026 MSBuild x64 packaged build passed.
+The matching development layout is registered in place as private version
+1.0.0.2; the source manifest version was restored after building. Final receiver
+validation with the loaded DLL verified remains pending.
 
 The user reported that the earlier private x64 candidate passed consent-time
 cancellation/recovery, video/audio near the current position, pause/resume,
@@ -74,7 +78,7 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
   choices made in Screenbox are not carried over. Tracks inside the file can
   be chosen in the Apple TV's own menu.
 - Casting fails on a Public network (decision 2).
-- Mac casting requires the prepared `0.3.0-ci.207` package update; the fork's
+- Mac casting requires this `0.3.0-ci.207` package update; the fork's
   previous pin `0.3.0-ci.196` listed Macs but could not cast to them. The Mac can
   ask for on-screen consent again after its grant period expires. Its URL-only
   session has no receiver-remote queue navigation or track-selection integration.
@@ -82,9 +86,8 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
   libraries but were not run.
 
 **Next steps**, for the user to choose (roughly by effort):
-1. Complete the prepared Mac package update: publish send-airplay2's verified
-   prerelease with approval, land the fork's version/hash pins, and validate
-   the final package on the MacBook Pro. Pairing asks for consent on screen,
+1. Complete the Mac package update: validate the published package on the
+   MacBook Pro and land the fork's version/hash pins after review. Pairing asks for consent on screen,
    then shows a PIN; reuse the existing pairing for playback checks.
 2. "Forget this AirPlay device" in the flyout, removing the local pairing.
 3. Validation of what is untested: x86 and ARM64 builds, a Chromecast
