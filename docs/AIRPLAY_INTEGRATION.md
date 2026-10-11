@@ -50,17 +50,26 @@ Credential Manager (Web Credentials) to pair again.
   choices made in Screenbox are not carried over. Tracks inside the file can
   be chosen in the Apple TV's own menu.
 - Casting fails on a Public network (decision 2).
+- Macs are listed (with their own icon and family) but cannot be cast to with
+  the current package: a Mac's AirPlay receiver rejects the remote-control
+  session. send-airplay2 added a fallback to URL-only controls (its D62,
+  merged after `0.3.0-ci.196`).
 - Only x64 was built and tested; x86 and ARM64 packages carry the native
   libraries but were not run.
 
 **Next steps**, for the user to choose (roughly by effort):
-1. "Forget this AirPlay device" in the flyout, removing the local pairing.
-2. Validation of what is untested: x86 and ARM64 builds, a Chromecast
+1. Casting to a Mac: once send-airplay2 publishes a prerelease with its D62
+   (with the user's approval), pin it with its SHA-256 in
+   `Screenbox.Core.csproj` and `scripts/Get-AirPlayPackage.ps1`. Then test
+   pairing (the Mac asks for consent on screen, then shows a PIN) and
+   casting to the MacBook Pro.
+2. "Forget this AirPlay device" in the flyout, removing the local pairing.
+3. Validation of what is untested: x86 and ARM64 builds, a Chromecast
    regression check, a sleeping TV, and a second receiver model.
-3. Library work (send-airplay2): MRP research on choosing subtitle tracks
+4. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
-4. Before an upstream PR (decision 6): publish the package on nuget.org,
+5. Before an upstream PR (decision 6): publish the package on nuget.org,
    remove the prerelease feed folder, script and source, and review the
    change set against upstream's contribution rules.
 
