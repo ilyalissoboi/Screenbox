@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#7, 2026-10-11); Mac package update awaiting final receiver validation.** Written 2026-10-09 against `main` at
+(PRs #1-#8, 2026-10-11); Mac package update merged and final receiver checks passed by user report.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -20,6 +20,7 @@ what is built and tested.
 | 4a: casting, player swap, start and end handling, messages | #5 | Merged; checked on the TV |
 | 4b: play queue, system media controls, casting overlay | #6 | Merged; checked on the TV |
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
+| Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -58,8 +59,19 @@ The user approved publication on 2026-10-11. Both the public download and a fres
 download through `Get-AirPlayPackage.ps1` match that hash. All 14 main CI jobs,
 86/86 Screenbox logic tests and the VS 2026 MSBuild x64 packaged build passed.
 The matching development layout is registered in place as private version
-1.0.0.2; the source manifest version was restored after building. Final receiver
-validation with the loaded DLL verified remains pending.
+1.0.0.2; the source manifest version was restored after building. Both DLLs
+loaded by the running app match the package: native SHA-256
+`3a81ef19bbbf7288a9fc71b3264445a5eaa787dd952d10e86fb4d22591f8d8e7`, crypto
+`4f6db0813f6405a92cf7c661e6df6e3aef4edc98b06ef21446b67ffbd357fd68`.
+They loaded after opening the Cast/device flyout. PR #8's test, lint and
+package-build checks passed at `59936fe` and it merged as `31013d5e`.
+After loaded-DLL verification, the user reported **"All checks passed"** for
+consent-time cancellation and prompt closure/recovery, normal video/audio near
+45 seconds, pause/resume, forward/backward seeks, Stop with local paused handoff
+and natural first-to-second queue advance. This completes the final-package
+gate on one MacBook Pro (`Mac14,10`, user-reported macOS 26.7.1) from this
+Windows x64 development app. No automated cast log or exact timings were
+captured; broader interoperability remains unvalidated.
 
 The user reported that the earlier private x64 candidate passed consent-time
 cancellation/recovery, video/audio near the current position, pause/resume,
@@ -86,16 +98,16 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
   libraries but were not run.
 
 **Next steps**, for the user to choose (roughly by effort):
-1. Complete the Mac package update: validate the published package on the
-   MacBook Pro and land the fork's version/hash pins after review. Pairing asks for consent on screen,
-   then shows a PIN; reuse the existing pairing for playback checks.
-2. "Forget this AirPlay device" in the flyout, removing the local pairing.
-3. Validation of what is untested: x86 and ARM64 builds, a Chromecast
+The Mac package update is complete for the recorded receiver/host. Final
+evidence documentation awaits review in fork PR #9 and native PR #41.
+
+1. "Forget this AirPlay device" in the flyout, removing the local pairing.
+2. Validation of what is untested: x86 and ARM64 builds, a Chromecast
    regression check, a sleeping TV, and a second receiver model.
-4. Library work (send-airplay2): MRP research on choosing subtitle tracks
+3. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
-5. Before an upstream PR (decision 6): publish the package on nuget.org,
+4. Before an upstream PR (decision 6): publish the package on nuget.org,
    remove the prerelease feed folder, script and source, and review the
    change set against upstream's contribution rules.
 
