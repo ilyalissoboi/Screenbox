@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#9, 2026-10-11); Mac package update merged and final receiver checks passed by user report. Forget-device follow-up is implemented, with packaged UI validation pending (2026-10-12).** Written 2026-10-09 against `main` at
+(PRs #1-#9, 2026-10-11); Mac package update merged and final receiver checks passed by user report. Forget-device follow-up is implemented and validated on the recorded Mac (PR #10, 2026-10-12), awaiting review/merge.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -22,7 +22,7 @@ what is built and tested.
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
 | Final Mac package evidence | #9 | Merged as `2cee2ea7` |
-| Forget this AirPlay device | Pending | Implemented on `codex/airplay-forget-device`; 96/96 logic tests pass; packaged UI validation pending |
+| Forget this AirPlay device | #10 | Implemented and validated on `codex/airplay-forget-device`; 96/96 logic tests, x64 packaged build and feature CI pass; review/merge pending |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -111,9 +111,21 @@ removal is pending. The same removal contract handles invalid-pairing cleanup.
 
 The 96/96 logic tests include target-only/idempotent deletion, storage failure,
 selection changes and busy-state guards, using synthetic profiles without a
-real vault or XAML objects. Packaged UI checks must verify the button layout,
-forget → pair → cast and another device's retained pairing before claiming a
-receiver pass. This uses the existing `0.3.0-ci.207` package.
+real vault or XAML objects. The VS 2026 MSBuild x64 package passed and was
+registered in place as private development version 1.0.0.3; the source manifest
+was restored afterward. The running executable and native/crypto module hashes
+match the extracted package. Computer Use observed the paired Mac's button,
+Forget changing it to Pair, the Apple TV still offering Cast/Forget and the
+Chromecast selection hiding Forget. The user completed re-pairing; the Mac
+again offers Cast/Forget. Computer Use started the authorized test clip, observed
+Forget hidden in the active-cast view, operated pause/resume and Stop, and
+observed the return to local paused playback near the last remote position.
+The user confirmed normal Mac video/audio, pause/resume and Stop closing its
+video. Test, XAML lint and package-build CI passed at implementation head
+`a3d64831`; this is one MacBook Pro/Windows x64 validation, with no new automated
+cast telemetry, x86/ARM64 run or Chromecast playback regression. This uses
+the existing `0.3.0-ci.207` package. The native project's D66 artifact records
+the exact local MSIX/executable/module hashes and observation limits.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
