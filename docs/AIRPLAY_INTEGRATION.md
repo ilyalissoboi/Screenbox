@@ -101,8 +101,10 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
 
 **Current follow-up: Forget this AirPlay device** (user-selected 2026-10-12).
 The cast flyout offers a secondary **Forget** button for a selected, locally
-paired AirPlay device, on the same footer row as Cast (user-requested refinement
-on 2026-10-12). It removes only that device's Screenbox PasswordVault profile; it does
+paired AirPlay device, immediately before Cast in a group at the bottom right
+(user-requested refinement on 2026-10-12). The action row has 8 DIPs between
+buttons and a 12-DIP gap above it to separate it from the device list. It removes
+only that device's Screenbox PasswordVault profile; it does
 not contact the receiver or clear its consent grants or pairing list. An absent
 profile counts as success. Success offers Pair immediately; a storage failure
 keeps the paired state and reports an error. Pair, Cast and Forget are blocked
@@ -143,6 +145,11 @@ revision `4c346af8` also passed the x64 package build, registered in place as
 hashes, then observed **Forget** left of **Cast** on the same row without overlap
 for the paired Mac. No Forget/Pair/Cast action or new receiver playback was
 performed in that layout inspection. Inspect current-head CI before merge.
+
+The later user-requested grouping/spacing revision needs manual visual
+confirmation. From that request onward, provide checks in chat and ask the user
+to confirm UI changes; do not use the Computer Use skill for visual confirmation.
+Retain the earlier Computer Use observations above as historical evidence.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
