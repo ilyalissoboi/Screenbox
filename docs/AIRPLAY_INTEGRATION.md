@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#9, 2026-10-11); Mac package update merged and final receiver checks passed by user report. Forget-device follow-up is implemented and validated on the recorded Mac (PR #10, 2026-10-12), awaiting review/merge.** Written 2026-10-09 against `main` at
+(PRs #1-#10, 2026-10-12); Mac package update and Forget-device follow-up are merged, with receiver/UI checks passed in the recorded scope.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -22,7 +22,7 @@ what is built and tested.
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
 | Final Mac package evidence | #9 | Merged as `2cee2ea7` |
-| Forget this AirPlay device | #10 | Implemented on `codex/airplay-forget-device`; 99/99 logic tests and x64 package pass; initial Mac playback and final compact footer checked; inspect current-head CI before merge |
+| Forget this AirPlay device | #10 | Merged as `8bfd3dd9`; 99/99 logic tests and x64 package pass; initial Mac playback and final footer checked; final-head test/lint/build CI passed at `47016474` |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -144,7 +144,7 @@ revision `4c346af8` also passed the x64 package build, registered in place as
 1.0.0.5. Computer Use verified its running executable and loaded native module
 hashes, then observed **Forget** left of **Cast** on the same row without overlap
 for the paired Mac. No Forget/Pair/Cast action or new receiver playback was
-performed in that layout inspection. Inspect current-head CI before merge.
+performed in that layout inspection. Final-head CI and merge are recorded below.
 
 The later grouping/spacing revision `1ba38e55` passed the x64 package build and
 was registered in place as private version 1.0.0.6. After written checks in chat,
@@ -156,12 +156,23 @@ receiver playback. From that request onward, provide checks in chat and ask the
 user to confirm UI changes; do not use the Computer Use skill for visual
 confirmation. Retain the earlier observations above as historical evidence.
 
+**Merge checkpoint (2026-10-12).** PR #10 merged as `8bfd3dd9`; test, XAML lint
+and package build passed at final head `47016474` (release skipped for PR).
+Its Chromecast busy-guard review is resolved. Native D65 evidence/handoff PR #42
+also merged as `8a40ec3` after all 14 checks passed at final head `8978188`.
+No implementation or validation gate remains for the selected follow-up in its
+recorded scope. Further development is unselected; the choices below remain
+options, not authorized new work. These merges add no new receiver observation.
+
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
 for the recorded receiver/host.
 
-1. Validation of what is untested: x86 and ARM64 builds, a Chromecast
-   regression check, a sleeping TV, and a second receiver model.
+1. Validation of what is untested: x86 and ARM64 builds and a second receiver
+   model. Chromecast video regression is deferred: the user has no suitable
+   local receiver. The user says sleeping Apple TV casting was already verified
+   earlier; no exact earlier build/date is supplied by this clarification, and
+   it should not be repeated as an uncompleted required gate.
 2. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
@@ -553,10 +564,22 @@ Screenbox's manual checks can focus on its own behavior.
 
 None blocking. Possible later work, not planned:
 
+The user requests native-library effort assessment for audio-file casting,
+including audio-only speakers/HomePod, and video with unsupported audio such
+as DTS. They also ask about 5.1/7.1 preservation. Speaker support needs an
+audio transport alongside URL-video sessions. DTS fallback can preserve the
+compressed video and transcode only audio; a finite VOD segment cache need
+not require growing playlists. These are engineering proposals, not a selected
+backend or implementation. Screenbox would need capability-aware device
+selection, new delivery options and music/queue/volume integration after the
+native APIs are validated. No new receiver run is added by the assessment.
+
 - **Casting formats the remux cannot serve** (VP9, AV1, MPEG-2, DTS audio;
   network streams): VLC as a transcoder to HLS that the library serves. It
-  needs library support for growing presentations, costs CPU, and seeking
-  restarts the transcode. LibVLC itself has no AirPlay renderer.
+  would need growing-presentation support for live/unknown-duration output;
+  finite-file audio-only conversion could instead use an indexed VOD cache.
+  Both cost CPU and require seek/timeline handling. LibVLC itself has no AirPlay
+  renderer, and the standalone library cannot assume the host supplies it.
 - **Choosing subtitle and audio tracks from Screenbox**, once the library
   supports selecting them on the receiver.
 - **HDR:** the remux does not yet declare HDR in its playlists, so HDR10 files
