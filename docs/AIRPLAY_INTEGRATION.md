@@ -168,8 +168,11 @@ options, not authorized new work. These merges add no new receiver observation.
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
 for the recorded receiver/host.
 
-1. Validation of what is untested: x86 and ARM64 builds, a Chromecast
-   regression check, a sleeping TV, and a second receiver model.
+1. Validation of what is untested: x86 and ARM64 builds and a second receiver
+   model. Chromecast video regression is deferred: the user has no suitable
+   local receiver. The user says sleeping Apple TV casting was already verified
+   earlier; no exact earlier build/date is supplied by this clarification, and
+   it should not be repeated as an uncompleted required gate.
 2. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
@@ -561,10 +564,22 @@ Screenbox's manual checks can focus on its own behavior.
 
 None blocking. Possible later work, not planned:
 
+The user requests native-library effort assessment for audio-file casting,
+including audio-only speakers/HomePod, and video with unsupported audio such
+as DTS. They also ask about 5.1/7.1 preservation. Speaker support needs an
+audio transport alongside URL-video sessions. DTS fallback can preserve the
+compressed video and transcode only audio; a finite VOD segment cache need
+not require growing playlists. These are engineering proposals, not a selected
+backend or implementation. Screenbox would need capability-aware device
+selection, new delivery options and music/queue/volume integration after the
+native APIs are validated. No new receiver run is added by the assessment.
+
 - **Casting formats the remux cannot serve** (VP9, AV1, MPEG-2, DTS audio;
   network streams): VLC as a transcoder to HLS that the library serves. It
-  needs library support for growing presentations, costs CPU, and seeking
-  restarts the transcode. LibVLC itself has no AirPlay renderer.
+  would need growing-presentation support for live/unknown-duration output;
+  finite-file audio-only conversion could instead use an indexed VOD cache.
+  Both cost CPU and require seek/timeline handling. LibVLC itself has no AirPlay
+  renderer, and the standalone library cannot assume the host supplies it.
 - **Choosing subtitle and audio tracks from Screenbox**, once the library
   supports selecting them on the receiver.
 - **HDR:** the remux does not yet declare HDR in its playlists, so HDR10 files
