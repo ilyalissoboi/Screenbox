@@ -26,6 +26,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="120" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock
             x:Name="TitleText"
@@ -128,6 +129,16 @@
             Content="{x:Bind strings:Resources.StopCast}"
             Visibility="Collapsed" />
 
+        <Button
+            x:Name="ForgetButton"
+            Grid.Row="4"
+            Margin="0,8,0,0"
+            HorizontalAlignment="Left"
+            AutomationProperties.HelpText="{x:Bind strings:Resources.AirPlayForgetDeviceHelp, Mode=OneTime}"
+            Command="{x:Bind ViewModel.ForgetCommand, Mode=OneTime}"
+            Content="{x:Bind strings:Resources.AirPlayForgetDevice, Mode=OneTime}"
+            Visibility="{x:Bind ViewModel.IsSelectedRendererPairedAirPlay, Mode=OneWay}" />
+
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="LayoutStates">
                 <VisualState x:Name="Discovering" />
@@ -143,6 +154,7 @@
                         <Setter Target="RendererList.Visibility" Value="Collapsed" />
                         <Setter Target="CastButton.Visibility" Value="Collapsed" />
                         <Setter Target="PairButton.Visibility" Value="Collapsed" />
+                        <Setter Target="ForgetButton.Visibility" Value="Collapsed" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>

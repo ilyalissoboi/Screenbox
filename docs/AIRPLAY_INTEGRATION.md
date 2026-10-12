@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#8, 2026-10-11); Mac package update merged and final receiver checks passed by user report.** Written 2026-10-09 against `main` at
+(PRs #1-#9, 2026-10-11); Mac package update merged and final receiver checks passed by user report. Forget-device follow-up is implemented, with packaged UI validation pending (2026-10-12).** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -9,7 +9,7 @@ alongside the existing Chromecast casting. User decisions, engineering
 proposals and open questions are kept apart below; the status section records
 what is built and tested.
 
-## Implementation status (2026-10-11)
+## Implementation status (2026-10-12)
 
 | Phase | Fork PR | State |
 | --- | --- | --- |
@@ -21,6 +21,8 @@ what is built and tested.
 | 4b: play queue, system media controls, casting overlay | #6 | Merged; checked on the TV |
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
+| Final Mac package evidence | #9 | Merged as `2cee2ea7` |
+| Forget this AirPlay device | Pending | Implemented on `codex/airplay-forget-device`; 96/96 logic tests pass; packaged UI validation pending |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -97,17 +99,32 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
 - Only x64 was built and tested; x86 and ARM64 packages carry the native
   libraries but were not run.
 
-**Next steps**, for the user to choose (roughly by effort):
-The Mac package update is complete for the recorded receiver/host. Final
-evidence documentation awaits review in fork PR #9 and native PR #41.
+**Current follow-up: Forget this AirPlay device** (user-selected 2026-10-12).
+The cast flyout offers a secondary button for a selected, locally paired AirPlay
+device. It removes only that device's Screenbox PasswordVault profile; it does
+not contact the receiver or clear its consent grants or pairing list. An absent
+profile counts as success. Success offers Pair immediately; a storage failure
+keeps the paired state and reports an error. Pair, Cast and Forget are blocked
+while removal runs, and Forget is unavailable during pairing, cast startup or
+an active cast. Completion does not change a different device selected while
+removal is pending. The same removal contract handles invalid-pairing cleanup.
 
-1. "Forget this AirPlay device" in the flyout, removing the local pairing.
-2. Validation of what is untested: x86 and ARM64 builds, a Chromecast
+The 96/96 logic tests include target-only/idempotent deletion, storage failure,
+selection changes and busy-state guards, using synthetic profiles without a
+real vault or XAML objects. Packaged UI checks must verify the button layout,
+forget → pair → cast and another device's retained pairing before claiming a
+receiver pass. This uses the existing `0.3.0-ci.207` package.
+
+**Later choices** (roughly by effort):
+The Mac package update and its evidence PRs #9/native #41 are merged and complete
+for the recorded receiver/host.
+
+1. Validation of what is untested: x86 and ARM64 builds, a Chromecast
    regression check, a sleeping TV, and a second receiver model.
-3. Library work (send-airplay2): MRP research on choosing subtitle tracks
+2. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
-4. Before an upstream PR (decision 6): publish the package on nuget.org,
+3. Before an upstream PR (decision 6): publish the package on nuget.org,
    remove the prerelease feed folder, script and source, and review the
    change set against upstream's contribution rules.
 

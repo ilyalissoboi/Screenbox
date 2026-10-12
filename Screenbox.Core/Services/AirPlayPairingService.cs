@@ -12,10 +12,18 @@ namespace Screenbox.Core.Services;
 public sealed class AirPlayPairingService : IAirPlayPairingService
 {
     private readonly ILogger<AirPlayPairingService> _logger;
+    private readonly Func<string, bool> _forgetProfile;
 
     public AirPlayPairingService(ILogger<AirPlayPairingService> logger)
+        : this(logger, profile => Pairing.ForgetProfile(profile, new PasswordVaultCredentialStore()))
+    {
+    }
+
+    /// <summary>Supplies the profile-removal operation without accessing the real vault in logic tests.</summary>
+    internal AirPlayPairingService(ILogger<AirPlayPairingService> logger, Func<string, bool> forgetProfile)
     {
         _logger = logger;
+        _forgetProfile = forgetProfile;
     }
 
     /// <inheritdoc/>
@@ -88,16 +96,19 @@ public sealed class AirPlayPairingService : IAirPlayPairingService
     }
 
     /// <inheritdoc/>
-    public void Forget(Renderer renderer)
+    public bool Forget(Renderer renderer)
     {
-        if (renderer.AirPlayReceiver is not { } receiver) return;
+        if (renderer.AirPlayReceiver is not { } receiver) return false;
         try
         {
-            Pairing.ForgetProfile(AirPlayProfiles.ForReceiver(receiver.Id), new PasswordVaultCredentialStore());
+            // The binding returns false for an absent profile, which is already forgotten.
+            _forgetProfile(AirPlayProfiles.ForReceiver(receiver.Id));
+            return true;
         }
         catch (Exception e)
         {
             _logger.LogWarning("AirPlay credential removal failed: {ErrorType}", e.GetType().Name);
+            return false;
         }
     }
 

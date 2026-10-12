@@ -32,7 +32,10 @@ public interface IAirPlayPairingService
 
     /// <summary>
     /// Deletes the local credentials of an AirPlay renderer, so it can be paired
-    /// again. The receiver's own pairing list is unchanged.
+    /// again. The receiver's own pairing list is unchanged. Returns true when
+    /// removal succeeded or the profile was already absent, and false for an
+    /// invalid renderer or a storage failure. Performs no network work and does
+    /// not throw for credential failures; callers may run it off the UI thread.
     /// </summary>
-    void Forget(Renderer renderer);
+    bool Forget(Renderer renderer);
 }

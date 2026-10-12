@@ -1192,6 +1192,18 @@
   <data name="AirPlayPair" xml:space="preserve">
     <value>Pair</value>
   </data>
+  <data name="AirPlayForgetDevice" xml:space="preserve">
+    <value>Forget this AirPlay device</value>
+  </data>
+  <data name="AirPlayForgetDeviceHelp" xml:space="preserve">
+    <value>Remove this device's saved pairing from Screenbox.</value>
+  </data>
+  <data name="AirPlayForgetFailedNotificationTitle" xml:space="preserve">
+    <value>Couldn't forget the AirPlay device</value>
+  </data>
+  <data name="AirPlayForgetFailedMessage" xml:space="preserve">
+    <value>The saved pairing couldn't be removed. Try again.</value>
+  </data>
   <data name="AirPlayPinDialogTitle" xml:space="preserve">
     <value>Pair with {0}</value>
     <comment>#Format[String name]</comment>
