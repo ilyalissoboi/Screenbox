@@ -146,10 +146,15 @@ hashes, then observed **Forget** left of **Cast** on the same row without overla
 for the paired Mac. No Forget/Pair/Cast action or new receiver playback was
 performed in that layout inspection. Inspect current-head CI before merge.
 
-The later user-requested grouping/spacing revision needs manual visual
-confirmation. From that request onward, provide checks in chat and ask the user
-to confirm UI changes; do not use the Computer Use skill for visual confirmation.
-Retain the earlier Computer Use observations above as historical evidence.
+The later grouping/spacing revision `1ba38e55` passed the x64 package build and
+was registered in place as private version 1.0.0.6. After written checks in chat,
+the user answered **Yes** to Forget immediately before Cast at the bottom right
+and clear separation from device names at the bottom of the list. Longer names
+were included conditionally if available; no exact name-length case was recorded.
+This is manual sender-layout confirmation, with no new credential operation or
+receiver playback. From that request onward, provide checks in chat and ask the
+user to confirm UI changes; do not use the Computer Use skill for visual
+confirmation. Retain the earlier observations above as historical evidence.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
