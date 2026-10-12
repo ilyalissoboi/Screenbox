@@ -22,7 +22,7 @@ what is built and tested.
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
 | Final Mac package evidence | #9 | Merged as `2cee2ea7` |
-| Forget this AirPlay device | #10 | Implemented and validated on `codex/airplay-forget-device`; 96/96 logic tests, x64 packaged build and feature CI pass; review/merge pending |
+| Forget this AirPlay device | #10 | Implemented on `codex/airplay-forget-device`; initial packaged Mac UI gate passed; review guard fix has 99/99 logic tests, final build/CI pending |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -109,7 +109,7 @@ while removal runs, and Forget is unavailable during pairing, cast startup or
 an active cast. Completion does not change a different device selected while
 removal is pending. The same removal contract handles invalid-pairing cleanup.
 
-The 96/96 logic tests include target-only/idempotent deletion, storage failure,
+The logic tests include target-only/idempotent deletion, storage failure,
 selection changes and busy-state guards, using synthetic profiles without a
 real vault or XAML objects. The VS 2026 MSBuild x64 package passed and was
 registered in place as private development version 1.0.0.3; the source manifest
@@ -126,6 +126,17 @@ video. Test, XAML lint and package-build CI passed at implementation head
 cast telemetry, x86/ARM64 run or Chromecast playback regression. This uses
 the existing `0.3.0-ci.207` package. The native project's D66 artifact records
 the exact local MSIX/executable/module hashes and observation limits.
+
+**PR #10 review follow-up.** A user could select Chromecast while an AirPlay
+Forget was pending and enable Cast through the Chromecast branch. The shared
+Forget guard now applies before either casting pipeline's eligibility. The
+99/99 logic tests include ready AirPlay and Chromecast selections, with
+Chromecast eligibility independent of AirPlay readiness. Restoring the reviewed
+Chromecast bypass makes the two Chromecast regression cases fail; the fixed
+source was restored byte-for-byte. This follow-up changes command eligibility
+only. The Mac UI observations above describe `a3d64831` before this review fix;
+they are not a new receiver pass for the revised binary. Final package build/CI
+must be checked at the current PR head.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete

@@ -16,6 +16,16 @@ namespace Screenbox.Core.Tests.ViewModels;
 public class CastControlViewModelTests
 {
     [Test]
+    [Arguments(RendererKind.Chromecast, true)]
+    [Arguments(RendererKind.Chromecast, false)]
+    [Arguments(RendererKind.AirPlay, true)]
+    public async Task CastEligibility_WhileForgetting_ShouldBlockOtherwiseReadyRenderers(RendererKind kind, bool airPlayReady)
+    {
+        await Assert.That(CastControlViewModel.IsCastAllowed(kind, isForgetting: false, airPlayReady)).IsTrue();
+        await Assert.That(CastControlViewModel.IsCastAllowed(kind, isForgetting: true, airPlayReady)).IsFalse();
+    }
+
+    [Test]
     public async Task Forget_WhenSuccessful_ShouldOfferPairAndKeepOtherPairings()
     {
         var first = CreateRenderer("AA:BB:CC:DD:EE:01");

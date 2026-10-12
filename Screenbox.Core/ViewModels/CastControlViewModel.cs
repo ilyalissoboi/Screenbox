@@ -174,11 +174,20 @@ public sealed partial class CastControlViewModel : ObservableObject
         }
     }
 
-    private bool CanCast() => SelectedRenderer switch
+    private bool CanCast() => SelectedRenderer is { IsAvailable: true } renderer &&
+        IsCastAllowed(renderer.Kind, IsForgetting,
+            isAirPlayReady: !IsSelectedRendererUnpaired && !IsPairing && !IsCastStarting);
+
+    /// <summary>
+    /// Applies the shared Forget guard before either pipeline's eligibility.
+    /// Value inputs let logic tests cover Chromecast without creating a native VLC renderer.
+    /// </summary>
+    internal static bool IsCastAllowed(RendererKind kind, bool isForgetting, bool isAirPlayReady) =>
+        !isForgetting && kind switch
     {
-        { IsAvailable: true, Kind: RendererKind.Chromecast } => true,
+        RendererKind.Chromecast => true,
         // An unpaired AirPlay receiver offers Pair instead.
-        { IsAvailable: true, Kind: RendererKind.AirPlay } => !IsSelectedRendererUnpaired && !IsPairing && !IsCastStarting && !IsForgetting,
+        RendererKind.AirPlay => isAirPlayReady,
         _ => false,
     };
 
