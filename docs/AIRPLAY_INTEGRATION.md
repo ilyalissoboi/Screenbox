@@ -161,8 +161,22 @@ and package build passed at final head `47016474` (release skipped for PR).
 Its Chromecast busy-guard review is resolved. Native D65 evidence/handoff PR #42
 also merged as `8a40ec3` after all 14 checks passed at final head `8978188`.
 No implementation or validation gate remains for the selected follow-up in its
-recorded scope. Further development is unselected; the choices below remain
-options, not authorized new work. These merges add no new receiver observation.
+recorded scope. Research/handoff PR #11 subsequently merged as `f596fd5e`
+(docs-only; no CI checks reported), alongside native PR #43 as `aa0f25e`
+(14 checks passed at `789f029`). These merges add no new receiver observation.
+
+**Next native slice, D67 (planning only).** The user now defers audio-file
+casting, including HomePod/audio-only speakers, and DTS conversion preserving
+5.1/7.1 output because suitable local test hardware is unavailable. Their
+[research](https://github.com/ilyalissoboi/send-airplay2/blob/main/docs/audio-features-assessment.md)
+is retained. The next slice to detail is video with surround audio downmixed
+to stereo AAC, with compressed H.264/HEVC video copied unchanged. See the
+[native plan](https://github.com/ilyalissoboi/send-airplay2/blob/43ee6a49833081baf8392c65d44b885d1a0d16c6/docs/stereo-aac-casting-plan.md).
+This request authorizes documentation, not implementation or a package update.
+After native codec/timeline/cache, ABI/binding and packaged gates, Screenbox
+would opt into the new delivery mode and pin an approved package. Keep current
+`HlsRemux` behavior and `ci.207` pin until then. Source profiles, channel layouts,
+stereo downmix and receiver playback need separate tests; none ran here.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
@@ -562,19 +576,19 @@ Screenbox's manual checks can focus on its own behavior.
 
 ## Open questions
 
-None blocking. Possible later work, not planned:
+None blocking for the implemented feature. Native stereo-AAC planning is
+recorded above; other possible later work follows.
 
-The user requests native-library effort assessment for audio-file casting,
-including audio-only speakers/HomePod, and video with unsupported audio such
-as DTS. They also ask about 5.1/7.1 preservation. Speaker support needs an
-audio transport alongside URL-video sessions. DTS fallback can preserve the
-compressed video and transcode only audio; a finite VOD segment cache need
-not require growing playlists. These are engineering proposals, not a selected
-backend or implementation. Screenbox would need capability-aware device
-selection, new delivery options and music/queue/volume integration after the
-native APIs are validated. No new receiver run is added by the assessment.
+Speaker-inclusive audio-file casting and DTS 5.1/7.1 output preservation remain
+researched but deferred for unavailable hardware. Speaker support needs a new
+audio transport, capability-aware device selection and music/queue/volume
+integration. The planned stereo-video slice instead uses the existing video
+session with an optional in-process audio codec backend and finite VOD cache;
+it need not require growing playlists. No code or new receiver evidence is
+added by this documentation. LibVLC's presence does not automatically supply
+the standalone native backend.
 
-- **Casting formats the remux cannot serve** (VP9, AV1, MPEG-2, DTS audio;
+- **Other formats the remux cannot serve** (VP9, AV1, MPEG-2;
   network streams): VLC as a transcoder to HLS that the library serves. It
   would need growing-presentation support for live/unknown-duration output;
   finite-file audio-only conversion could instead use an indexed VOD cache.
