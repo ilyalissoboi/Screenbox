@@ -77,6 +77,7 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.PlaylistItemsAdded when numericValue is double count => Strings.Resources.PlaylistItemsAddedNotificationTitle(count, title ?? string.Empty),
             NotificationKind.ResumePosition => Strings.Resources.ResumePositionNotificationTitle,
             NotificationKind.AirPlayPaired => Strings.Resources.AirPlayPairedNotificationTitle(title ?? string.Empty),
+            NotificationKind.AirPlayForgetFailed => Strings.Resources.AirPlayForgetFailedNotificationTitle,
             NotificationKind.AirPlayPinRejected or NotificationKind.AirPlayPairingConnectionFailed
                 or NotificationKind.AirPlayPairingFailed => Strings.Resources.AirPlayPairingFailedNotificationTitle,
             NotificationKind.AirPlayCastNotLocalFile or NotificationKind.AirPlayCastFormatUnsupported
@@ -106,6 +107,7 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.SubtitleAdded => message,
             NotificationKind.AirPlayPinRejected => Strings.Resources.AirPlayPinRejectedMessage,
             NotificationKind.AirPlayPairingConnectionFailed => Strings.Resources.AirPlayPairingConnectionFailedMessage,
+            NotificationKind.AirPlayForgetFailed => Strings.Resources.AirPlayForgetFailedMessage,
             NotificationKind.AirPlayCastNotLocalFile => Strings.Resources.AirPlayCastNotLocalFileMessage,
             NotificationKind.AirPlayCastFormatUnsupported => Strings.Resources.AirPlayCastFormatUnsupportedMessage,
             NotificationKind.AirPlayCastFileUnreadable => Strings.Resources.AirPlayCastFileUnreadableMessage,

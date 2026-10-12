@@ -1,7 +1,7 @@
 # AirPlay casting: integration design
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
-(PRs #1-#8, 2026-10-11); Mac package update merged and final receiver checks passed by user report.** Written 2026-10-09 against `main` at
+(PRs #1-#9, 2026-10-11); Mac package update merged and final receiver checks passed by user report. Forget-device follow-up is implemented and validated on the recorded Mac (PR #10, 2026-10-12), awaiting review/merge.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to
 Screenbox through the
 [send-airplay2](https://github.com/ilyalissoboi/send-airplay2) library,
@@ -9,7 +9,7 @@ alongside the existing Chromecast casting. User decisions, engineering
 proposals and open questions are kept apart below; the status section records
 what is built and tested.
 
-## Implementation status (2026-10-11)
+## Implementation status (2026-10-12)
 
 | Phase | Fork PR | State |
 | --- | --- | --- |
@@ -21,6 +21,8 @@ what is built and tested.
 | 4b: play queue, system media controls, casting overlay | #6 | Merged; checked on the TV |
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
+| Final Mac package evidence | #9 | Merged as `2cee2ea7` |
+| Forget this AirPlay device | #10 | Implemented on `codex/airplay-forget-device`; 99/99 logic tests and x64 package pass; initial Mac playback and final compact footer checked; inspect current-head CI before merge |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -97,17 +99,73 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
 - Only x64 was built and tested; x86 and ARM64 packages carry the native
   libraries but were not run.
 
-**Next steps**, for the user to choose (roughly by effort):
-The Mac package update is complete for the recorded receiver/host. Final
-evidence documentation awaits review in fork PR #9 and native PR #41.
+**Current follow-up: Forget this AirPlay device** (user-selected 2026-10-12).
+The cast flyout offers a secondary **Forget** button for a selected, locally
+paired AirPlay device, immediately before Cast in a group at the bottom right
+(user-requested refinement on 2026-10-12). The action row has 8 DIPs between
+buttons and a 12-DIP gap above it to separate it from the device list. It removes
+only that device's Screenbox PasswordVault profile; it does
+not contact the receiver or clear its consent grants or pairing list. An absent
+profile counts as success. Success offers Pair immediately; a storage failure
+keeps the paired state and reports an error. Pair, Cast and Forget are blocked
+while removal runs, and Forget is unavailable during pairing, cast startup or
+an active cast. Completion does not change a different device selected while
+removal is pending. The same removal contract handles invalid-pairing cleanup.
 
-1. "Forget this AirPlay device" in the flyout, removing the local pairing.
-2. Validation of what is untested: x86 and ARM64 builds, a Chromecast
+The logic tests include target-only/idempotent deletion, storage failure,
+selection changes and busy-state guards, using synthetic profiles without a
+real vault or XAML objects. The VS 2026 MSBuild x64 package passed and was
+registered in place as private development version 1.0.0.3; the source manifest
+was restored afterward. The running executable and native/crypto module hashes
+match the extracted package. Computer Use observed the paired Mac's button,
+Forget changing it to Pair, the Apple TV still offering Cast/Forget and the
+Chromecast selection hiding Forget. The user completed re-pairing; the Mac
+again offers Cast/Forget. Computer Use started the authorized test clip, observed
+Forget hidden in the active-cast view, operated pause/resume and Stop, and
+observed the return to local paused playback near the last remote position.
+The user confirmed normal Mac video/audio, pause/resume and Stop closing its
+video. Test, XAML lint and package-build CI passed at implementation head
+`a3d64831`; this is one MacBook Pro/Windows x64 validation, with no new automated
+cast telemetry, x86/ARM64 run or Chromecast playback regression. This uses
+the existing `0.3.0-ci.207` package. The native project's D66 artifact records
+the exact local MSIX/executable/module hashes and observation limits.
+
+**PR #10 review follow-up.** A user could select Chromecast while an AirPlay
+Forget was pending and enable Cast through the Chromecast branch. The shared
+Forget guard now applies before either casting pipeline's eligibility. The
+99/99 logic tests include ready AirPlay and Chromecast selections, with
+Chromecast eligibility independent of AirPlay readiness. Restoring the reviewed
+Chromecast bypass makes the two Chromecast regression cases fail; the fixed
+source was restored byte-for-byte. This follow-up changes command eligibility
+only. The Mac UI observations above describe `a3d64831` before this review fix;
+they are not a new receiver pass for the revised binary. The review-fix x64
+package passed as private version 1.0.0.4. The subsequent compact-label/footer
+revision `4c346af8` also passed the x64 package build, registered in place as
+1.0.0.5. Computer Use verified its running executable and loaded native module
+hashes, then observed **Forget** left of **Cast** on the same row without overlap
+for the paired Mac. No Forget/Pair/Cast action or new receiver playback was
+performed in that layout inspection. Inspect current-head CI before merge.
+
+The later grouping/spacing revision `1ba38e55` passed the x64 package build and
+was registered in place as private version 1.0.0.6. After written checks in chat,
+the user answered **Yes** to Forget immediately before Cast at the bottom right
+and clear separation from device names at the bottom of the list. Longer names
+were included conditionally if available; no exact name-length case was recorded.
+This is manual sender-layout confirmation, with no new credential operation or
+receiver playback. From that request onward, provide checks in chat and ask the
+user to confirm UI changes; do not use the Computer Use skill for visual
+confirmation. Retain the earlier observations above as historical evidence.
+
+**Later choices** (roughly by effort):
+The Mac package update and its evidence PRs #9/native #41 are merged and complete
+for the recorded receiver/host.
+
+1. Validation of what is untested: x86 and ARM64 builds, a Chromecast
    regression check, a sleeping TV, and a second receiver model.
-3. Library work (send-airplay2): MRP research on choosing subtitle tracks
+2. Library work (send-airplay2): MRP research on choosing subtitle tracks
    from Screenbox and on the TV remote's next/previous; HDR in the remux's
    playlists; growing presentations for files still being written.
-4. Before an upstream PR (decision 6): publish the package on nuget.org,
+3. Before an upstream PR (decision 6): publish the package on nuget.org,
    remove the prerelease feed folder, script and source, and review the
    change set against upstream's contribution rules.
 

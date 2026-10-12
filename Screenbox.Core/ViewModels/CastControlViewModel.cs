@@ -25,6 +25,8 @@ public sealed partial class CastControlViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CastCommand))]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
+    [NotifyPropertyChangedFor(nameof(IsSelectedRendererPairedAirPlay))]
     public partial Renderer? SelectedRenderer { get; set; }
 
     /// <summary>
@@ -34,22 +36,39 @@ public sealed partial class CastControlViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CastCommand))]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
+    [NotifyPropertyChangedFor(nameof(IsSelectedRendererPairedAirPlay))]
     public partial bool IsSelectedRendererUnpaired { get; set; }
+
+    /// <summary>Whether the selected device has an AirPlay pairing that can be forgotten.</summary>
+    public bool IsSelectedRendererPairedAirPlay =>
+        SelectedRenderer is { Kind: RendererKind.AirPlay } && !IsSelectedRendererUnpaired;
 
     /// <summary>Whether a pairing is in progress.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
     [NotifyCanExecuteChangedFor(nameof(CastCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
     public partial bool IsPairing { get; set; }
 
     /// <summary>Whether an AirPlay cast is starting (the TV may take several seconds).</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CastCommand))]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
     public partial bool IsCastStarting { get; set; }
 
+    /// <summary>Whether a saved local AirPlay pairing is being removed.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CastCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PairCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
+    public partial bool IsForgetting { get; set; }
+
     [ObservableProperty] public partial Renderer? CastingDevice { get; set; }
-    [ObservableProperty] public partial bool IsCasting { get; set; }
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
+    public partial bool IsCasting { get; set; }
 
     private IMediaPlayer? MediaPlayer => _playerContext.MediaPlayer;
 
@@ -155,11 +174,20 @@ public sealed partial class CastControlViewModel : ObservableObject
         }
     }
 
-    private bool CanCast() => SelectedRenderer switch
+    private bool CanCast() => SelectedRenderer is { IsAvailable: true } renderer &&
+        IsCastAllowed(renderer.Kind, IsForgetting,
+            isAirPlayReady: !IsSelectedRendererUnpaired && !IsPairing && !IsCastStarting);
+
+    /// <summary>
+    /// Applies the shared Forget guard before either pipeline's eligibility.
+    /// Value inputs let logic tests cover Chromecast without creating a native VLC renderer.
+    /// </summary>
+    internal static bool IsCastAllowed(RendererKind kind, bool isForgetting, bool isAirPlayReady) =>
+        !isForgetting && kind switch
     {
-        { IsAvailable: true, Kind: RendererKind.Chromecast } => true,
+        RendererKind.Chromecast => true,
         // An unpaired AirPlay receiver offers Pair instead.
-        { IsAvailable: true, Kind: RendererKind.AirPlay } => !IsSelectedRendererUnpaired && !IsPairing && !IsCastStarting,
+        RendererKind.AirPlay => isAirPlayReady,
         _ => false,
     };
 
@@ -191,8 +219,8 @@ public sealed partial class CastControlViewModel : ObservableObject
 
         if (result is AirPlayCastResult.PairingInvalid)
         {
-            _airPlayPairingService.Forget(renderer);
-            if (SelectedRenderer == renderer) IsSelectedRendererUnpaired = true;
+            // Keep pairing/cast actions blocked while invalid credentials are removed.
+            if (!await ForgetPairingAsync(renderer)) return;
         }
 
         NotificationKind? kind = result switch
@@ -275,7 +303,47 @@ public sealed partial class CastControlViewModel : ObservableObject
         }
     }
 
-    private bool CanPair() => !IsPairing && IsSelectedRendererUnpaired && SelectedRenderer is { IsAvailable: true };
+    private bool CanPair() => !IsPairing && !IsCastStarting && !IsForgetting &&
+        IsSelectedRendererUnpaired && SelectedRenderer is { IsAvailable: true };
+
+    /// <summary>
+    /// Removes only the captured device's local pairing. Selection may change
+    /// while storage work runs, so completion updates the flyout only if that
+    /// same renderer is still selected. A failure preserves the paired state.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanForget))]
+    private async Task ForgetAsync()
+    {
+        if (!CanForget() || SelectedRenderer is not { } renderer) return;
+        await ForgetPairingAsync(renderer);
+    }
+
+    /// <summary>Runs explicit and invalid-pairing cleanup under the same busy/failure contract.</summary>
+    private async Task<bool> ForgetPairingAsync(Renderer renderer)
+    {
+        IsForgetting = true;
+        try
+        {
+            bool forgotten = await Task.Run(() => _airPlayPairingService.Forget(renderer));
+            if (forgotten)
+            {
+                if (SelectedRenderer == renderer) IsSelectedRendererUnpaired = true;
+            }
+            else
+            {
+                WeakReferenceMessenger.Default.Send(new NotificationMessage(
+                    NotificationLevel.Error, NotificationKind.AirPlayForgetFailed));
+            }
+            return forgotten;
+        }
+        finally
+        {
+            IsForgetting = false;
+        }
+    }
+
+    private bool CanForget() => IsSelectedRendererPairedAirPlay &&
+        !IsPairing && !IsCastStarting && !IsForgetting && !IsCasting;
 
     /// <summary>
     /// Runs on the pairing thread: shows the PIN dialog on the UI thread and

@@ -37,4 +37,5 @@ public enum NotificationKind
     AirPlayCastFailed,
     AirPlayCastEnded,
     AirPlayNextItemNotCast,
+    AirPlayForgetFailed,
 }
