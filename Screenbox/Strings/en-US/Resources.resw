@@ -1193,7 +1193,7 @@
     <value>Pair</value>
   </data>
   <data name="AirPlayForgetDevice" xml:space="preserve">
-    <value>Forget this AirPlay device</value>
+    <value>Forget</value>
   </data>
   <data name="AirPlayForgetDeviceHelp" xml:space="preserve">
     <value>Remove this device's saved pairing from Screenbox.</value>

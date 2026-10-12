@@ -100,8 +100,9 @@ establish a pass for the final main package. Screenbox's 86 logic tests passed.
   libraries but were not run.
 
 **Current follow-up: Forget this AirPlay device** (user-selected 2026-10-12).
-The cast flyout offers a secondary button for a selected, locally paired AirPlay
-device. It removes only that device's Screenbox PasswordVault profile; it does
+The cast flyout offers a secondary **Forget** button for a selected, locally
+paired AirPlay device, on the same footer row as Cast (user-requested refinement
+on 2026-10-12). It removes only that device's Screenbox PasswordVault profile; it does
 not contact the receiver or clear its consent grants or pairing list. An absent
 profile counts as success. Success offers Pair immediately; a storage failure
 keeps the paired state and reports an error. Pair, Cast and Forget are blocked
