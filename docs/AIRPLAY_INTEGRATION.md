@@ -22,7 +22,7 @@ what is built and tested.
 | Cosmetics: blurred overlay, 4-digit PIN boxes, device icons, model line | #7 | Merged; recorded UI observations remain in send-airplay2's handoff |
 | Mac receiver package `0.3.0-ci.207` and hash pin | #8 | Merged as `31013d5e`; final x64/Mac checks passed by user report with loaded DLLs verified |
 | Final Mac package evidence | #9 | Merged as `2cee2ea7` |
-| Forget this AirPlay device | #10 | Implemented on `codex/airplay-forget-device`; initial packaged Mac UI gate passed; review guard fix has 99/99 logic tests, final build/CI pending |
+| Forget this AirPlay device | #10 | Implemented on `codex/airplay-forget-device`; 99/99 logic tests and x64 package pass; initial Mac playback and final compact footer checked; inspect current-head CI before merge |
 
 All TV checks are the user's, on one Apple TV 4K (tvOS 26.6) from the x64
 package on a Private network. The library's record of them is in
@@ -136,8 +136,13 @@ Chromecast eligibility independent of AirPlay readiness. Restoring the reviewed
 Chromecast bypass makes the two Chromecast regression cases fail; the fixed
 source was restored byte-for-byte. This follow-up changes command eligibility
 only. The Mac UI observations above describe `a3d64831` before this review fix;
-they are not a new receiver pass for the revised binary. Final package build/CI
-must be checked at the current PR head.
+they are not a new receiver pass for the revised binary. The review-fix x64
+package passed as private version 1.0.0.4. The subsequent compact-label/footer
+revision `4c346af8` also passed the x64 package build, registered in place as
+1.0.0.5. Computer Use verified its running executable and loaded native module
+hashes, then observed **Forget** left of **Cast** on the same row without overlap
+for the paired Mac. No Forget/Pair/Cast action or new receiver playback was
+performed in that layout inspection. Inspect current-head CI before merge.
 
 **Later choices** (roughly by effort):
 The Mac package update and its evidence PRs #9/native #41 are merged and complete
