@@ -101,6 +101,15 @@ translation, legacy migration and third-party trimming warnings remain visible.
 XAML formatting and `git diff --check` pass. Actual MSIX inspection passes for
 two ordinary native files and all 40 opt-in native/source/notice files.
 
+Development version 1.0.0.8 is registered in place from a real extracted MSIX,
+preserving app data/pairings. It includes the final guard that treats a
+superseded start as cancelled even if a concurrent failure completed first.
+The source manifest keeps its normal version. Runtime loading and observations
+are pending. GitHub reports no PR runs; explicit manual dispatch returned
+HTTP 422, "Actions has been disabled for this repository," although its read-only
+permissions metadata reports enabled. The user has been asked to inspect/enable
+workflows. CI has not passed and must be rerun for the final head once available.
+
 Library D88 observations apply to its recorded native/test-host builds, not this
 Screenbox host. Before claiming host interoperability, verify the installed
 AppContainer and six loaded DLL hashes, then manually check the setting/default,
