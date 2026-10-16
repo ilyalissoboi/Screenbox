@@ -64,6 +64,10 @@ public class AirPlayAudioPolicyTests
     {
         await Assert.That(AirPlayCastFailures.FromStart(native)).IsEqualTo(host);
         await Assert.That(AirPlayCastFailures.ForStart(host)).IsEqualTo(notification);
+        if (host is not AirPlayCastResult.FileUnreadable)
+        {
+            await Assert.That(AirPlayCastFailures.ForNextItem(host)).IsEqualTo(notification);
+        }
     }
 
     [Test]

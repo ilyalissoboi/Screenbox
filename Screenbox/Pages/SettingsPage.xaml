@@ -328,6 +328,7 @@
                         AutomationProperties.Name="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
                         IsOn="{x:Bind ViewModel.AirPlayAllowStereoConversion, Mode=TwoWay}" />
                 </ctc:SettingsCard>
+                <!--  Enqueue All Files In Folder  -->
                 <ctc:SettingsCard
                     x:Name="SettingsEnqueueAllFilesInFolderCard"
                     Margin="{StaticResource SettingsCardMargin}"

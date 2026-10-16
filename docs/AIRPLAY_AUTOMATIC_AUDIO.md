@@ -1,7 +1,8 @@
 # Experimental x64 AirPlay audio conversion
 
 2026-10-16. The opt-in host integration is implemented on
-`codex/airplay-automatic-audio-x64`. This adds a build profile and an explicit
+`codex/airplay-automatic-audio-x64` in [PR #13](https://github.com/ilyalissoboi/Screenbox/pull/13).
+This adds a build profile and an explicit
 user preference; it is not enabled in ordinary builds. Local logic and package
 checks pass. Fresh Screenbox receiver/queue observations are still pending.
 
