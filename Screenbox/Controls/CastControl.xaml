@@ -130,6 +130,12 @@
                 Visibility="{x:Bind ViewModel.IsSelectedRendererUnpaired, Mode=OneWay}" />
 
             <Button
+                x:Name="CancelCastStartButton"
+                Command="{x:Bind ViewModel.CancelCastStartCommand, Mode=OneTime}"
+                Content="{x:Bind strings:Resources.Cancel, Mode=OneTime}"
+                Visibility="Collapsed" />
+
+            <Button
                 x:Name="StopCastingButton"
                 Command="{x:Bind ViewModel.StopCastingCommand, Mode=OneTime}"
                 Content="{x:Bind strings:Resources.StopCast, Mode=OneTime}"
@@ -139,6 +145,18 @@
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="LayoutStates">
                 <VisualState x:Name="Discovering" />
+                <VisualState x:Name="Starting">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind ViewModel.IsCastStarting, Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="CancelCastStartButton.Visibility" Value="Visible" />
+                        <Setter Target="CastButton.Visibility" Value="Collapsed" />
+                        <Setter Target="PairButton.Visibility" Value="Collapsed" />
+                        <Setter Target="ForgetButton.Visibility" Value="Collapsed" />
+                        <Setter Target="RendererList.IsEnabled" Value="False" />
+                    </VisualState.Setters>
+                </VisualState>
                 <VisualState x:Name="Casting">
                     <VisualState.StateTriggers>
                         <StateTrigger IsActive="{x:Bind ViewModel.IsCasting, Mode=OneWay}" />
