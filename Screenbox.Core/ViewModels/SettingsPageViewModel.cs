@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using Microsoft.Extensions.Logging;
+using Screenbox.Core.Casting.AirPlay;
 using Screenbox.Core.Contexts;
 using Screenbox.Core.Coordinators;
 using Screenbox.Core.Enums;
@@ -38,6 +39,8 @@ public sealed partial class SettingsPageViewModel : ObservableRecipient
     [ObservableProperty] public partial bool PlayerGesturePressAndHold { get; set; }
     [ObservableProperty] public partial bool PlayerShowControls { get; set; }
     [ObservableProperty] public partial bool PlayerShowChapters { get; set; }
+    [ObservableProperty] public partial bool AirPlayAllowStereoConversion { get; set; }
+
     [ObservableProperty] public partial int PlayerControlsHideDelay { get; set; }
     [ObservableProperty] public partial int VolumeBoost { get; set; }
     [ObservableProperty] public partial bool UseIndexer { get; set; }
@@ -54,6 +57,9 @@ public sealed partial class SettingsPageViewModel : ObservableRecipient
     [ObservableProperty] public partial int SelectedLanguage { get; set; }
     [ObservableProperty] public partial bool PersistPlaybackPosition { get; set; }
     [ObservableProperty] public partial StorageFolder? FrameCaptureFolder { get; set; }
+
+    /// <summary>Whether this build includes the experimental audio runtime.</summary>
+    public bool IsAirPlayStereoConversionAvailable => AirPlayAudioPolicy.IsAvailable;
 
     public ObservableCollection<StorageFolder> MusicLocations { get; }
 
@@ -141,6 +147,7 @@ public sealed partial class SettingsPageViewModel : ObservableRecipient
         PlayerGesturePressAndHold = _settingsService.PlayerGesturePressAndHold;
         PlayerShowControls = _settingsService.PlayerShowControls;
         PlayerShowChapters = _settingsService.PlayerShowChapters;
+        AirPlayAllowStereoConversion = _settingsService.AirPlayAllowStereoConversion;
         PlayerControlsHideDelay = _settingsService.PlayerControlsHideDelay;
         UseIndexer = _settingsService.UseIndexer;
         ShowRecent = _settingsService.ShowRecent;
@@ -263,6 +270,12 @@ public sealed partial class SettingsPageViewModel : ObservableRecipient
     {
         _settingsService.PlayerShowControls = value;
         Messenger.Send(new SettingsChangedMessage(nameof(PlayerShowControls), typeof(SettingsPageViewModel)));
+    }
+
+    partial void OnAirPlayAllowStereoConversionChanged(bool value)
+    {
+        _settingsService.AirPlayAllowStereoConversion = value;
+        Messenger.Send(new SettingsChangedMessage(nameof(AirPlayAllowStereoConversion), typeof(SettingsPageViewModel)));
     }
 
     partial void OnPlayerShowChaptersChanged(bool value)

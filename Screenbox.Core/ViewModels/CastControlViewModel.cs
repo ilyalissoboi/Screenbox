@@ -56,6 +56,7 @@ public sealed partial class CastControlViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(CastCommand))]
     [NotifyCanExecuteChangedFor(nameof(PairCommand))]
     [NotifyCanExecuteChangedFor(nameof(ForgetCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelCastStartCommand))]
     public partial bool IsCastStarting { get; set; }
 
     /// <summary>Whether a saved local AirPlay pairing is being removed.</summary>
@@ -223,16 +224,7 @@ public sealed partial class CastControlViewModel : ObservableObject
             if (!await ForgetPairingAsync(renderer)) return;
         }
 
-        NotificationKind? kind = result switch
-        {
-            AirPlayCastResult.NothingToCast or AirPlayCastResult.NotLocalFile => NotificationKind.AirPlayCastNotLocalFile,
-            AirPlayCastResult.FormatUnsupported => NotificationKind.AirPlayCastFormatUnsupported,
-            AirPlayCastResult.FileUnreadable => NotificationKind.AirPlayCastFileUnreadable,
-            AirPlayCastResult.ConnectionFailed => NotificationKind.AirPlayCastConnectionFailed,
-            AirPlayCastResult.PairingInvalid => NotificationKind.AirPlayCastPairingInvalid,
-            AirPlayCastResult.Failed => NotificationKind.AirPlayCastFailed,
-            _ => null, // Cancelled: nothing to report.
-        };
+        NotificationKind? kind = AirPlayCastFailures.ForStart(result);
         if (kind is { } notificationKind)
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(NotificationLevel.Error, notificationKind));
@@ -372,6 +364,16 @@ public sealed partial class CastControlViewModel : ObservableObject
 
         return pin.Task;
     }
+
+    /// <summary>Cancels an initial AirPlay start, including source/cache admission.</summary>
+    [RelayCommand(CanExecute = nameof(CanCancelCastStart))]
+    private void CancelCastStart()
+    {
+        // Invalidate pre-Create work too; leave the busy state until StartAsync returns.
+        _airPlayCastCoordinator.Stop();
+    }
+
+    private bool CanCancelCastStart() => IsCastStarting;
 
     [RelayCommand]
     private void StopCasting()

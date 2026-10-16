@@ -38,4 +38,9 @@ public enum NotificationKind
     AirPlayCastEnded,
     AirPlayNextItemNotCast,
     AirPlayForgetFailed,
+    AirPlayAudioSelectionFailed,
+    AirPlayAudioCodecFailed,
+    AirPlayAudioCacheFailed,
+    AirPlayAudioLimitReached,
+    AirPlayAudioGenerationTimedOut,
 }

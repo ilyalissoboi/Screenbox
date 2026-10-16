@@ -31,4 +31,15 @@ public enum AirPlayCastResult
 
     /// <summary>Any other failure.</summary>
     Failed,
+
+    /// <summary>The original audio cannot be selected unambiguously.</summary>
+    AudioSelectionFailed,
+    /// <summary>Decoding or encoding the selected audio failed.</summary>
+    AudioCodecFailed,
+    /// <summary>The app's per-cast fragment storage failed.</summary>
+    AudioCacheFailed,
+    /// <summary>A conversion budget or cache quota was exceeded.</summary>
+    AudioLimitReached,
+    /// <summary>Audio preparation or generation exceeded its deadline.</summary>
+    AudioGenerationTimedOut,
 }

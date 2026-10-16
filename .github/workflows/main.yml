@@ -12,6 +12,12 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '*.md'
+  workflow_dispatch:
+    inputs:
+      airplay_stereo_aac:
+        description: Also validate the experimental x64 AirPlay audio profile
+        type: boolean
+        default: false
 
 jobs:
   xaml-lint:
@@ -49,7 +55,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: ~\.nuget\packages
-          key: ${{ runner.os }}-nuget-test-${{ hashFiles('**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-test-${{ hashFiles('**/*.csproj', 'AirPlay.Package.props') }}
           restore-keys: |
             ${{ runner.os }}-nuget-test-
 
@@ -80,7 +86,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~\.nuget\packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'AirPlay.Package.props') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
@@ -167,9 +173,65 @@ jobs:
             !C:\DeployOutput\*_Test\*.msix
           compression-level: 0
 
+  airplay-stereo-aac:
+    # Experimental x64 validation does not participate in tag publication.
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.airplay_stereo_aac)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: x64
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~\.nuget\packages
+          key: ${{ runner.os }}-nuget-stereo-aac-${{ hashFiles('**/*.csproj', 'AirPlay.Package.props') }}
+
+      - name: Verify both package pins and profile refusals
+        run: |
+          .\scripts\Get-AirPlayPackage.ps1
+          .\scripts\Get-AirPlayPackage.ps1 -StereoAac -Platform x64
+          .\scripts\Test-AirPlayPackage.ps1
+
+      - name: Build and run opt-in logic tests
+        run: |
+          msbuild Screenbox.Core.Tests\Screenbox.Core.Tests.csproj -restore -p:Configuration=Release -p:Platform=x64 -p:AirPlayStereoAac=true -p:OutDir=C:\AudioTests\
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          C:\AudioTests\Screenbox.Core.Tests.exe
+
+      - name: Configure sideload identity and version
+        run: |
+          .\scripts\Update-AppxManifest.ps1 -Identity SideloadUnsigned
+          .\scripts\Update-ProjectVersion.ps1
+
+      - name: Build opt-in x64 app package
+        run: |
+          msbuild Screenbox\Screenbox.csproj -restore -p:RestoreConfigFile=nuget.config -p:ContinuousIntegrationBuild=true -p:Configuration=Release -p:Platform=x64 -p:AirPlayStereoAac=true -p:AppxBundle=Never -p:AppxPackageDir=C:\AudioDeploy\ -p:UapAppxPackageBuildMode=SideloadOnly
+
+      - name: Verify packaged DLLs and complete source and notices
+        run: |
+          $packages = @(Get-ChildItem C:\AudioDeploy -Recurse -Filter '*Screenbox*.msix')
+          if ($packages.Count -ne 1) { throw 'Expected exactly one x64 app MSIX.' }
+          [IO.Compression.ZipFile]::ExtractToDirectory($packages[0].FullName, 'C:\AudioLayout')
+          .\scripts\Test-AirPlayDistribution.ps1 -StereoAac -LayoutDirectory C:\AudioLayout
+
+      - name: Upload experimental x64 sideload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Screenbox-airplay-stereo-aac-x64
+          path: C:\AudioDeploy\
+          compression-level: 0
+
   release:
     needs: build
-    if: github.ref_type == 'tag'
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write

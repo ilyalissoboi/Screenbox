@@ -1,62 +1,61 @@
 <#
 .SYNOPSIS
-    Places the pinned send-airplay2 NuGet package in the packages-airplay feed folder.
-
+    Downloads and verifies the selected AirPlay package before restore.
 .DESCRIPTION
-    Screenbox.Core references the SendAirPlay2 package, which is not on nuget.org yet
-    (docs/AIRPLAY_INTEGRATION.md). nuget.config lists the repository's packages-airplay
-    folder as a package source; this script fills it before a restore.
-
-    The version is the one Screenbox.Core.csproj references. When
-    packages-airplay\SendAirPlay2.<version>.nupkg already exists (for example a local
-    pack copied from a send-airplay2 checkout), the script leaves it alone. Otherwise it
-    downloads the asset of the send-airplay2 GitHub prerelease nuget-v<version> and
-    accepts it only if its SHA-256 matches the hash recorded below for that version.
-
-    When the reference moves to a new prerelease, add that version's hash to
-    $KnownPackages.
-
+    Evaluates the same profile properties as Screenbox.Core. Ordinary builds use
+    the codec-free package; -StereoAac selects the experimental x64 profile.
+    Existing cached files must match the pin too. No unverified local-pack bypass.
 .EXAMPLE
-    PS> ./scripts/Get-AirPlayPackage.ps1
+    ./scripts/Get-AirPlayPackage.ps1 -StereoAac -Platform x64
 #>
 [CmdletBinding()]
-param()
-
+param(
+    [switch]$StereoAac,
+    [ValidateSet('x64', 'x86', 'arm64')][string]$Platform = 'x64',
+    [string]$FeedDirectory
+)
 $ErrorActionPreference = 'Stop'
-
-# SHA-256 of each published prerelease asset, by package version.
-$KnownPackages = @{
-    '0.3.0-ci.196' = 'f94543305baa1dff9c01e03ba3565640f723e8b61a467aae823219d573e2bb2c'
-    '0.3.0-ci.207' = 'e52affdf9f79e20dcd00b59380c9949d1f9b11d1339307f8a2b86ad14e1ffa4d'
+if ($StereoAac -and $Platform -ne 'x64') {
+    throw 'The opt-in AirPlay stereo AAC profile requires Platform=x64.'
 }
-
 $root = Split-Path -Parent $PSScriptRoot
-$project = Join-Path $root 'Screenbox.Core\Screenbox.Core.csproj'
-$reference = ([xml](Get-Content $project -Raw)).SelectSingleNode("//PackageReference[@Include='SendAirPlay2']")
-if ($null -eq $reference) {
-    throw "Screenbox.Core.csproj has no SendAirPlay2 package reference"
+$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+$msbuild = & $vswhere -version '[18.0,19.0)' -latest -products * -find 'MSBuild\**\Bin\MSBuild.exe' |
+    Select-Object -First 1
+if (-not $msbuild) { throw 'Visual Studio 2026 MSBuild is required.' }
+$project = Join-Path $root 'Screenbox.Core/Screenbox.Core.csproj'
+$profile = $StereoAac.IsPresent.ToString().ToLowerInvariant()
+$evaluated = & $msbuild $project -nologo "-p:Platform=$Platform" "-p:AirPlayStereoAac=$profile" `
+    '-getProperty:AirPlayPackageId,AirPlayPackageVersion,AirPlayPackageSha256,AirPlayReleaseTag' | Out-String
+if ($LASTEXITCODE -ne 0) { throw "Cannot evaluate the AirPlay package profile: $evaluated" }
+$properties = ($evaluated | ConvertFrom-Json).Properties
+$id = $properties.AirPlayPackageId
+$version = $properties.AirPlayPackageVersion
+$expected = $properties.AirPlayPackageSha256
+$tag = $properties.AirPlayReleaseTag
+if (-not $id -or -not $version -or $expected -notmatch '^[a-f0-9]{64}$' -or -not $tag) {
+    throw 'Incomplete AirPlay package pin.'
 }
-$version = $reference.Version
-
-$feed = Join-Path $root 'packages-airplay'
-$package = Join-Path $feed "SendAirPlay2.$version.nupkg"
-if (Test-Path $package) {
-    Write-Host "SendAirPlay2 $version is already in packages-airplay"
-    exit 0
+$feed = if ($FeedDirectory) { [IO.Path]::GetFullPath($FeedDirectory) } else { Join-Path $root 'packages-airplay' }
+New-Item -ItemType Directory -Force $feed | Out-Null
+$package = Join-Path $feed "$id.$version.nupkg"
+function Assert-PackageHash([string]$Path) {
+    if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+        throw "AirPlay package hash mismatch for $id $version. Preserve the file for inspection and restore the pinned artifact."
+    }
 }
-if (-not $KnownPackages.ContainsKey($version)) {
-    throw "No recorded hash for SendAirPlay2 $version. Copy a local pack into packages-airplay, or add the prerelease's SHA-256 to this script."
+if (Test-Path -LiteralPath $package) {
+    Assert-PackageHash $package
+    Write-Host "Verified cached $id $version"
+    return
 }
-
-$uri = "https://github.com/ilyalissoboi/send-airplay2/releases/download/nuget-v$version/SendAirPlay2.$version.nupkg"
-$download = "$package.download"
-Write-Host "Downloading SendAirPlay2 $version from the send-airplay2 prerelease"
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Invoke-WebRequest -Uri $uri -OutFile $download -UseBasicParsing
-$hash = (Get-FileHash $download -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($hash -ne $KnownPackages[$version]) {
-    Remove-Item $download
-    throw "SendAirPlay2 $version has SHA-256 $hash, not the recorded $($KnownPackages[$version])"
+$download = "$package.download.$([Guid]::NewGuid().ToString('N'))"
+try {
+    $uri = "https://github.com/ilyalissoboi/send-airplay2/releases/download/$tag/$id.$version.nupkg"
+    Invoke-WebRequest -Uri $uri -OutFile $download -UseBasicParsing
+    Assert-PackageHash $download
+    Move-Item -LiteralPath $download -Destination $package
+} finally {
+    if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download }
 }
-Move-Item $download $package
-Write-Host "SendAirPlay2 $version placed in packages-airplay"
+Write-Host "Verified $id $version in packages-airplay"

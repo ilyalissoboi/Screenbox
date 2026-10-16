@@ -16,6 +16,26 @@ namespace Screenbox.Core.Tests.ViewModels;
 public class CastControlViewModelTests
 {
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task CancelCastStart_ShouldOnlyBeEnabledDuringPendingStart(bool starting)
+    {
+        var vm = CreateViewModel(new TestPairingService());
+        int commandChanges = 0;
+        vm.CancelCastStartCommand.CanExecuteChanged += (_, _) => commandChanges++;
+        vm.IsCastStarting = starting;
+        await Assert.That(vm.CancelCastStartCommand.CanExecute(null)).IsEqualTo(starting);
+        await Assert.That(commandChanges).IsEqualTo(starting ? 1 : 0);
+        if (starting)
+        {
+            // Cancellation must work even before a media source/native cast exists.
+            vm.CancelCastStartCommand.Execute(null);
+            await Assert.That(vm.IsCastStarting).IsTrue();
+            await Assert.That(vm.ForgetCommand.CanExecute(null)).IsFalse();
+        }
+    }
+
+    [Test]
     [Arguments(RendererKind.Chromecast, true)]
     [Arguments(RendererKind.Chromecast, false)]
     [Arguments(RendererKind.AirPlay, true)]
@@ -147,7 +167,7 @@ public class CastControlViewModelTests
     {
         var player = new PlayerContext();
         var cast = new CastContext();
-        var coordinator = new AirPlayCastCoordinator(player, cast, new TestPlayerService(),
+        var coordinator = new AirPlayCastCoordinator(player, cast, new TestPlayerService(), new TestSettingsService(),
             NullLogger<AirPlayCastCoordinator>.Instance);
         return new CastControlViewModel(player, cast, new TestCastService(), pairing,
             new TestPinDialogService(), coordinator, NullLogger<CastControlViewModel>.Instance);

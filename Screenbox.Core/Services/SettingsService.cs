@@ -35,6 +35,7 @@ public sealed class SettingsService : ISettingsService
     private const string PersistentSongsSortOrderKey = "Values/Songs/SortOrder";
     private const string PersistentAlbumsSortOrderKey = "Values/Albums/SortOrder";
     private const string PlayerShowChaptersKey = "Player/ShowChapters";
+    private const string AirPlayAllowStereoConversionKey = "Casting/AirPlay/AllowStereoConversion";
     private const string PrivacyPersistPlaybackPosition = "Privacy/PersistPlaybackPosition";
 
     private const string PlayerRewindStepKey = "Player/RewindStep";
@@ -168,6 +169,12 @@ public sealed class SettingsService : ISettingsService
         set => SetValue(PersistentShowRemainingTimeKey, value);
     }
 
+    public bool AirPlayAllowStereoConversion
+    {
+        get => GetValue<bool>(AirPlayAllowStereoConversionKey);
+        set => SetValue(AirPlayAllowStereoConversionKey, value);
+    }
+
     public bool PlayerShowChapters
     {
         get => GetValue<bool>(PlayerShowChaptersKey);
@@ -272,6 +279,7 @@ public sealed class SettingsService : ISettingsService
         SetDefault(PersistentSongsSortOrderKey, (int)SongSortOrder.Title);
         SetDefault(PersistentAlbumsSortOrderKey, (int)AlbumSortOrder.Title);
         SetDefault(PlayerShowChaptersKey, true);
+        SetDefault(AirPlayAllowStereoConversionKey, false);
         SetDefault(PrivacyPersistPlaybackPosition, true);
         SetDefault(PlayerRewindStepKey, 5);
         SetDefault(PlayerFastForwardStepKey, 5);

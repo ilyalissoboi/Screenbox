@@ -67,6 +67,27 @@
     <PRIResource Remove="Strings\ta-IN\*.resw" />
   </ItemGroup>
 
+  <!-- Keep the pinned dynamic runtime's notices and complete rebuild sources in
+       the installed app; DLLs themselves are selected by NuGet runtime assets. -->
+  <PropertyGroup Condition="'$(AirPlayStereoAac)' == 'true'">
+    <AirPlayDistributionRoot>$(NuGetPackageRoot)sendairplay2.stereoaac\$(AirPlayPackageVersion)\</AirPlayDistributionRoot>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(AirPlayStereoAac)' == 'true'">
+    <AirPlayRequiredPayload Include="$(AirPlayDistributionRoot)THIRD-PARTY-NOTICES.txt;$(AirPlayDistributionRoot)LICENSE.txt;$(AirPlayDistributionRoot)AUDIO-PROFILE.json;$(AirPlayDistributionRoot)BUILD-INFO.txt;$(AirPlayDistributionRoot)source\ffmpeg\ffmpeg-n9.0.2.tar.gz;$(AirPlayDistributionRoot)source\ffmpeg\README.md;$(AirPlayDistributionRoot)source\ffmpeg\vcpkg.spdx.json" />
+    <Content Include="$(AirPlayDistributionRoot)THIRD-PARTY-NOTICES.txt;$(AirPlayDistributionRoot)LICENSE.txt;$(AirPlayDistributionRoot)AUDIO-PROFILE.json;$(AirPlayDistributionRoot)BUILD-INFO.txt">
+      <Link>ThirdParty\SendAirPlay2\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(AirPlayDistributionRoot)source\ffmpeg\**\*">
+      <Link>ThirdParty\SendAirPlay2\source\ffmpeg\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Target Name="CheckAirPlayRedistributionPayload" BeforeTargets="PrepareForBuild" Condition="'$(AirPlayStereoAac)' == 'true'">
+    <Error Condition="!Exists('%(AirPlayRequiredPayload.Identity)')"
+           Text="Required AirPlay source/notice payload missing: %(AirPlayRequiredPayload.Filename)%(AirPlayRequiredPayload.Extension). Restore the pinned opt-in package." />
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="..\Screenbox.Core\Screenbox.Core.csproj" />
     <ProjectReference Include="..\Screenbox.Lively\Screenbox.Lively.csproj" />

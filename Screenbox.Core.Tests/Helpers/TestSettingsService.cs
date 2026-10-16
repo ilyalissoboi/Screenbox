@@ -9,6 +9,7 @@ public class TestSettingsService : ISettingsService
     public PlayerAutoResizeOption PlayerAutoResize { get; set; } = PlayerAutoResizeOption.Never;
     public bool UseIndexer { get; set; } = true;
     public bool PlayerShowControls { get; set; } = true;
+    public bool AirPlayAllowStereoConversion { get; set; }
     public bool PersistentShowRemainingTime { get; set; }
     public bool PlayerShowChapters { get; set; } = true;
     public int PlayerControlsHideDelay { get; set; } = 3;

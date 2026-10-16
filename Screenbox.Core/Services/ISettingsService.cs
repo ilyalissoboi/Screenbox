@@ -8,6 +8,8 @@ public interface ISettingsService
     PlayerAutoResizeOption PlayerAutoResize { get; set; }
     bool UseIndexer { get; set; }
     bool PlayerShowControls { get; set; }
+    /// <summary>Whether AirPlay may convert surround/lossless audio to stereo in opt-in builds.</summary>
+    bool AirPlayAllowStereoConversion { get; set; }
 
     /// <summary>
     /// Gets or sets a value that indicates whether the remaining playback time
