@@ -12,6 +12,12 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '*.md'
+  workflow_dispatch:
+    inputs:
+      airplay_stereo_aac:
+        description: Also validate the experimental x64 AirPlay audio profile
+        type: boolean
+        default: false
 
 jobs:
   xaml-lint:
@@ -169,7 +175,7 @@ jobs:
 
   airplay-stereo-aac:
     # Experimental x64 validation does not participate in tag publication.
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.airplay_stereo_aac)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -225,7 +231,7 @@ jobs:
 
   release:
     needs: build
-    if: github.ref_type == 'tag'
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write

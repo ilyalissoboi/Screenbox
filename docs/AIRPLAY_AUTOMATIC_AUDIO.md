@@ -45,8 +45,11 @@ It checks every packaged native/source/notice file against the hash-pinned
 package. Without `-StereoAac`, it checks the two ordinary native files and refuses
 the four added codec DLLs. `Test-AirPlayPackage.ps1` tests cached hashes,
 corruption preservation and profile refusals offline after downloading both pins.
-The separate PR-only CI job builds/tests/packages the opt-in profile; existing
+The separate PR/manual CI job builds/tests/packages the opt-in profile; existing
 ordinary builds and tag publication keep their current profile.
+Manual workflow dispatch defaults to ordinary validation; enable the boolean
+`airplay_stereo_aac` input to include the experimental profile. Release creation
+is limited to tag-push events.
 
 ## User policy and storage
 
