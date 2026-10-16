@@ -117,14 +117,21 @@ public sealed class AirPlayCastCoordinator
             vlcPlayer.Pause();
 
             (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request);
+            if (!_lifetime.IsCurrent(request))
+            {
+                // Stop/supersession wins even if a concurrent failure completed first.
+                if (cast is not null) DisposeInBackground(cast);
+                return AirPlayCastResult.Cancelled;
+            }
+
             if (result is not AirPlayCastResult.Started || cast is null)
             {
-                if (wasPlaying && result is not AirPlayCastResult.Cancelled && _lifetime.IsCurrent(request) &&
+                if (wasPlaying && result is not AirPlayCastResult.Cancelled &&
                     _playerContext.MediaPlayer == vlcPlayer && vlcPlayer.PlaybackItem == item) vlcPlayer.Play();
                 return result;
             }
 
-            if (!_lifetime.IsCurrent(request) || _playerContext.MediaPlayer != vlcPlayer || vlcPlayer.PlaybackItem != item)
+            if (_playerContext.MediaPlayer != vlcPlayer || vlcPlayer.PlaybackItem != item)
             {
                 DisposeInBackground(cast);
                 return AirPlayCastResult.Cancelled;
