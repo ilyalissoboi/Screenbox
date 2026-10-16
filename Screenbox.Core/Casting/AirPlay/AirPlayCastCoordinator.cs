@@ -126,7 +126,8 @@ public sealed class AirPlayCastCoordinator
 
             if (result is not AirPlayCastResult.Started || cast is null)
             {
-                if (wasPlaying && result is not AirPlayCastResult.Cancelled &&
+                // Caller cancellation returned above; a current failed start restores prior playback.
+                if (wasPlaying &&
                     _playerContext.MediaPlayer == vlcPlayer && vlcPlayer.PlaybackItem == item) vlcPlayer.Play();
                 return result;
             }

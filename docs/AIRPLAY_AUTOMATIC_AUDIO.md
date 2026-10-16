@@ -131,6 +131,13 @@ permissions metadata reported enabled. The user enabled workflows; manual run
 `a6f1fcc9` pass all four jobs. Recheck final evidence heads. Native documentation
 PR #73 passed all 17 checks at `52c5a3b`.
 
+Review follow-up: a failed start whose request is still current restores local
+playback if it was previously playing, including a cancellation returned by the
+receiver/library. Caller Cancel/Stop invalidates the request and returns before
+that recovery branch, preserving paused handoff. Both logic suites are rerun.
+The recorded 1.0.0.9 receiver observations precede this recovery-only correction;
+they do not claim a new receiver-side rejection observation.
+
 Library D88 observations apply to its recorded native/test-host builds, not this
 Screenbox host. The complete host gate verifies the installed
 AppContainer and six loaded DLL hashes, then manually checks the setting/default,
