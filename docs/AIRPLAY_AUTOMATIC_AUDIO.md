@@ -4,7 +4,8 @@
 `codex/airplay-automatic-audio-x64` in [PR #13](https://github.com/ilyalissoboi/Screenbox/pull/13).
 This adds a build profile and an explicit
 user preference; it is not enabled in ordinary builds. Local logic and package
-checks pass. Fresh Screenbox receiver/queue observations are still pending.
+checks pass. Recorded receiver checks are described below; the latest full queue
+gate status is in [native checkpoint PR #73](https://github.com/ilyalissoboi/send-airplay2/pull/73).
 
 ## Build and package selection
 
@@ -89,10 +90,16 @@ codec, storage, quota/limits and generation timeouts. Terminal mapping respects
 the first end reason. Local paused handoff and the existing queue semantics are
 retained; Chromecast and local audio policy are unchanged.
 
+The flyout offers Cancel while an initial AirPlay start is pending. It invokes
+coordinator cancellation even before a native cast/source exists, keeps the busy
+state until start returns, and disables selection/pair/forget/cast while pending.
+Active casts and queue transitions retain Stop casting. Both profiles include
+this cancellation path; the stereo permission/profile remain opt-in only.
+
 ## Validation checkpoint
 
 Visual Studio 2026 builds both Core profiles and x64 app MSIX profiles. Logic
-tests pass 111/111 ordinary and 125/125 opt-in, including immutable positional
+tests pass 113/113 ordinary and 127/127 opt-in, including immutable positional
 reads, cancellation during seal, collisions/unknown-file preservation, locked-file
 cleanup retry, unused/pre-transfer release, sibling isolation, cleanup ordering,
 superseded admission, logger failure containment and explicit policy/error
@@ -101,22 +108,39 @@ translation, legacy migration and third-party trimming warnings remain visible.
 XAML formatting and `git diff --check` pass. Actual MSIX inspection passes for
 two ordinary native files and all 40 opt-in native/source/notice files.
 
-Development version 1.0.0.8 is registered in place from a real extracted MSIX,
+Development version 1.0.0.9 is registered in place from a real extracted MSIX,
 preserving app data/pairings. It includes the final guard that treats a
 superseded start as cancelled even if a concurrent failure completed first.
-The source manifest keeps its normal version. Runtime loading and observations
-are pending. GitHub reports no PR runs; explicit manual dispatch returned
+It also exposes the startup Cancel action. The source manifest keeps its normal
+version. This process passes AppContainer and six loaded-DLL hash checks. The
+user confirms setting/default off and unchanged macOS 26.7.1/tvOS 26.6. Mac
+unanswered-consent cancellation through Cancel passes prompt closure,
+responsiveness, paused local playback and no error. AAC copy with conversion off
+passes on Mac and Apple TV: start near 45 seconds, synchronization/channel
+pattern, pause/resume, both seeks, Stop closure and local paused handoff. DTS
+refusal with conversion off passes on the Mac; converted DTS with conversion on
+passes those same checks on both receivers. A 250-ms cache sampler across the DTS
+checks observes at most one owned directory, peak 430,412 bytes, and zero
+directories/bytes afterward. Sampling does not capture every instantaneous state.
+The linked native checkpoint records natural/rapid queue observations separately.
+The preceding 1.0.0.8 process passed AppContainer/six loaded-DLL hash checks; it
+was replaced before receiver testing. Initially, GitHub reported no PR runs and manual dispatch returned
 HTTP 422, "Actions has been disabled for this repository," although its read-only
-permissions metadata reports enabled. The user has been asked to inspect/enable
-workflows. CI has not passed and must be rerun for the final head once available.
+permissions metadata reported enabled. The user enabled workflows; manual run
+`38870523110` at `bff9e2fc` and automatic PR run `38871102108` at runtime head
+`a6f1fcc9` pass all four jobs. Recheck final evidence heads. Native documentation
+PR #73 passed all 17 checks at `52c5a3b`.
 
 Library D88 observations apply to its recorded native/test-host builds, not this
-Screenbox host. Before claiming host interoperability, verify the installed
-AppContainer and six loaded DLL hashes, then manually check the setting/default,
+Screenbox host. The complete host gate verifies the installed
+AppContainer and six loaded DLL hashes, then manually checks the setting/default,
 AAC copy with conversion off, DTS refusal while off, DTS conversion while on,
 sync/channel pattern/start near 45 seconds/pause/resume/seeks/Stop, Mac consent
 cancellation and retry, and natural queue advance copy-to-conversion and back on
-the recorded Mac/Apple TV. Confirm local playback stays paused and caches drain.
+the recorded Mac/Apple TV. It also checks rapid Next supersession and Stop during
+a transition, confirming local playback stays paused and caches drain. Consult
+the linked checkpoint for completed versus pending observations; this procedure
+does not request repeating completed tests.
 Use only the original repository-owned controls. No private film is cast.
 
 Manual observations are requested in chat; Computer Use is not used to confirm
