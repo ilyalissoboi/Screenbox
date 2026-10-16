@@ -25,16 +25,28 @@ internal sealed class StorageFileMediaSource : MediaSource
     private StorageFileMediaSource(IRandomAccessStreamWithContentType stream)
     {
         _stream = stream;
+        Size = checked((long)stream.Size);
         // No read-ahead buffer: the receiver's range requests jump around the file.
         _reader = stream.AsStreamForRead(0);
-        Size = checked((long)stream.Size);
     }
 
     /// <summary>Opens <paramref name="file"/> for reading.</summary>
     internal static async Task<StorageFileMediaSource> OpenAsync(StorageFile file)
     {
-        return new StorageFileMediaSource(await file.OpenReadAsync());
+        IRandomAccessStreamWithContentType stream = await file.OpenReadAsync();
+        try
+        {
+            return new StorageFileMediaSource(stream);
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
     }
+
+    /// <summary>Closes a source cancelled before Cast.Create was invoked; never call after transfer.</summary>
+    internal void AbandonBeforeTransfer() => OnReleased();
 
     public override long Size { get; }
 
@@ -56,8 +68,8 @@ internal sealed class StorageFileMediaSource : MediaSource
     {
         lock (_gate)
         {
-            _reader.Dispose();
-            _stream.Dispose();
+            try { _reader.Dispose(); }
+            finally { _stream.Dispose(); }
         }
     }
 }

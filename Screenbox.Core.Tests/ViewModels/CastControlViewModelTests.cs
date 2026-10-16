@@ -147,7 +147,7 @@ public class CastControlViewModelTests
     {
         var player = new PlayerContext();
         var cast = new CastContext();
-        var coordinator = new AirPlayCastCoordinator(player, cast, new TestPlayerService(),
+        var coordinator = new AirPlayCastCoordinator(player, cast, new TestPlayerService(), new TestSettingsService(),
             NullLogger<AirPlayCastCoordinator>.Instance);
         return new CastControlViewModel(player, cast, new TestCastService(), pairing,
             new TestPinDialogService(), coordinator, NullLogger<CastControlViewModel>.Instance);

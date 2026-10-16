@@ -223,16 +223,7 @@ public sealed partial class CastControlViewModel : ObservableObject
             if (!await ForgetPairingAsync(renderer)) return;
         }
 
-        NotificationKind? kind = result switch
-        {
-            AirPlayCastResult.NothingToCast or AirPlayCastResult.NotLocalFile => NotificationKind.AirPlayCastNotLocalFile,
-            AirPlayCastResult.FormatUnsupported => NotificationKind.AirPlayCastFormatUnsupported,
-            AirPlayCastResult.FileUnreadable => NotificationKind.AirPlayCastFileUnreadable,
-            AirPlayCastResult.ConnectionFailed => NotificationKind.AirPlayCastConnectionFailed,
-            AirPlayCastResult.PairingInvalid => NotificationKind.AirPlayCastPairingInvalid,
-            AirPlayCastResult.Failed => NotificationKind.AirPlayCastFailed,
-            _ => null, // Cancelled: nothing to report.
-        };
+        NotificationKind? kind = AirPlayCastFailures.ForStart(result);
         if (kind is { } notificationKind)
         {
             WeakReferenceMessenger.Default.Send(new NotificationMessage(NotificationLevel.Error, notificationKind));

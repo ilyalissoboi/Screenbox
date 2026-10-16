@@ -1311,5 +1311,26 @@
     <value>Mac</value>
     <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
   </data>
+  <data name="SettingsAirPlayStereoConversionHeader" xml:space="preserve">
+    <value>Allow stereo audio conversion for AirPlay</value>
+  </data>
+  <data name="SettingsAirPlayStereoConversionDescription" xml:space="preserve">
+    <value>Convert unsupported audio to stereo AAC when casting video. Surround and lossless audio become stereo. Applies to the next cast.</value>
+  </data>
+  <data name="AirPlayAudioSelectionFailedMessage" xml:space="preserve">
+    <value>This video's audio track can't be selected automatically. Try a file with one enabled audio track.</value>
+  </data>
+  <data name="AirPlayAudioCodecFailedMessage" xml:space="preserve">
+    <value>The selected audio couldn't be converted for AirPlay.</value>
+  </data>
+  <data name="AirPlayAudioCacheFailedMessage" xml:space="preserve">
+    <value>Temporary storage for AirPlay audio failed. Check available space and try again.</value>
+  </data>
+  <data name="AirPlayAudioLimitReachedMessage" xml:space="preserve">
+    <value>This video's audio exceeds the AirPlay conversion limits or temporary-storage quota.</value>
+  </data>
+  <data name="AirPlayAudioGenerationTimedOutMessage" xml:space="preserve">
+    <value>Audio conversion took too long and AirPlay casting stopped.</value>
+  </data>
 </root>
 

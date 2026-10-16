@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 # Partial downloads of scripts/Get-AirPlayPackage.ps1.
 packages-airplay/*.download
+packages-airplay/*.download.*

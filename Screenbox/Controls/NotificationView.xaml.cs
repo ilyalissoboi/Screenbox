@@ -83,6 +83,9 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.AirPlayCastNotLocalFile or NotificationKind.AirPlayCastFormatUnsupported
                 or NotificationKind.AirPlayCastFileUnreadable or NotificationKind.AirPlayCastConnectionFailed
                 or NotificationKind.AirPlayCastPairingInvalid or NotificationKind.AirPlayCastFailed
+                or NotificationKind.AirPlayAudioSelectionFailed or NotificationKind.AirPlayAudioCodecFailed
+                or NotificationKind.AirPlayAudioCacheFailed or NotificationKind.AirPlayAudioLimitReached
+                or NotificationKind.AirPlayAudioGenerationTimedOut
                 => Strings.Resources.AirPlayCastFailedNotificationTitle,
             NotificationKind.AirPlayCastEnded or NotificationKind.AirPlayNextItemNotCast
                 => Strings.Resources.AirPlayCastEndedNotificationTitle,
@@ -115,6 +118,11 @@ public sealed partial class NotificationView : UserControl
             NotificationKind.AirPlayCastPairingInvalid => Strings.Resources.AirPlayCastPairingInvalidMessage,
             NotificationKind.AirPlayCastEnded => Strings.Resources.AirPlayCastEndedMessage,
             NotificationKind.AirPlayNextItemNotCast => Strings.Resources.AirPlayNextItemNotCastMessage,
+            NotificationKind.AirPlayAudioSelectionFailed => Strings.Resources.AirPlayAudioSelectionFailedMessage,
+            NotificationKind.AirPlayAudioCodecFailed => Strings.Resources.AirPlayAudioCodecFailedMessage,
+            NotificationKind.AirPlayAudioCacheFailed => Strings.Resources.AirPlayAudioCacheFailedMessage,
+            NotificationKind.AirPlayAudioLimitReached => Strings.Resources.AirPlayAudioLimitReachedMessage,
+            NotificationKind.AirPlayAudioGenerationTimedOut => Strings.Resources.AirPlayAudioGenerationTimedOutMessage,
             _ => null,
         };
     }

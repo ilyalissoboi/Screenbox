@@ -317,7 +317,17 @@
 
                 <!--#region General Section-->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="{x:Bind strings:Resources.SettingsCategoryGeneral}" />
-                <!--  Enqueue All Files In Folder  -->
+                <!--  Opt-in AirPlay audio permission  -->
+                <ctc:SettingsCard
+                    Margin="{StaticResource SettingsCardMargin}"
+                    Description="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
+                    Header="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
+                    Visibility="{x:Bind AirPlayStereoSettingsVisibility, Mode=OneTime}">
+                    <ToggleSwitch
+                        AutomationProperties.HelpText="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
+                        IsOn="{x:Bind ViewModel.AirPlayAllowStereoConversion, Mode=TwoWay}" />
+                </ctc:SettingsCard>
                 <ctc:SettingsCard
                     x:Name="SettingsEnqueueAllFilesInFolderCard"
                     Margin="{StaticResource SettingsCardMargin}"

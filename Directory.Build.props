@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)AirPlay.Package.props" />
 
   <!-- Platform configuration -->
   <PropertyGroup>
@@ -16,6 +17,8 @@
   <!-- Output path configuration -->
   <PropertyGroup>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- Both AirPlay profiles can leave generated sources in this checkout. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- Trimming switches -->

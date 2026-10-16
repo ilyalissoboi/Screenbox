@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup Condition="'$(AirPlayStereoAac)' == 'true'">
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+  </PropertyGroup>
+  <Target Name="CheckAirPlayBuildProfile" BeforeTargets="PrepareForBuild;CollectPackageReferences">
+    <Error Condition="'$(AirPlayStereoAac)' != 'true' And '$(AirPlayStereoAac)' != 'false'"
+           Text="AirPlayStereoAac must be true or false." />
+    <Error Condition="'$(AirPlayStereoAac)' == 'true' And ('$(Platform)' != 'x64' Or ('$(RuntimeIdentifier)' != '' And '$(RuntimeIdentifier)' != 'win-x64'))"
+           Text="The opt-in AirPlay stereo AAC profile requires Platform=x64 and the win-x64 runtime." />
+  </Target>
+</Project>

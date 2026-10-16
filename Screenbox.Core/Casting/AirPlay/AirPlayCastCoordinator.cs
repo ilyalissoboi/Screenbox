@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
@@ -55,12 +56,15 @@ public sealed class AirPlayCastCoordinator
     private readonly IPlayerService _playerService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ILogger<AirPlayCastCoordinator> _logger;
+    private readonly ISettingsService _settingsService;
+    private readonly AirPlayCastLifetime _lifetime;
     private AirPlayMediaPlayer? _player;
     private Cast? _cast;
     private VlcMediaPlayer? _vlcPlayer;
     private Renderer? _renderer;
     private Cast? _startingCast;
     private bool _swapping;
+    private bool _isStarting;
 
     // A move to another item is in progress; requests made meanwhile wait here, and only
     // the latest is cast (UI thread only).
@@ -72,12 +76,15 @@ public sealed class AirPlayCastCoordinator
     private volatile bool _itemRequestPending;
 
     public AirPlayCastCoordinator(PlayerContext playerContext, CastContext castContext, IPlayerService playerService,
-        ILogger<AirPlayCastCoordinator> logger)
+        ISettingsService settingsService, ILogger<AirPlayCastCoordinator> logger)
     {
         _playerContext = playerContext;
         _castContext = castContext;
         _playerService = playerService;
         _logger = logger;
+        _settingsService = settingsService;
+        _lifetime = new AirPlayCastLifetime(e =>
+            _logger.LogWarning("AirPlay cast cleanup failed: {ErrorType}", e.GetType().Name));
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _playerContext.PropertyChanged += OnPlayerContextPropertyChanged;
     }
@@ -93,40 +100,48 @@ public sealed class AirPlayCastCoordinator
     /// </summary>
     public async Task<AirPlayCastResult> StartAsync(Renderer renderer)
     {
-        if (_player is not null || _startingCast is not null) return AirPlayCastResult.Failed;
+        if (_player is not null || _isStarting || _castingNext) return AirPlayCastResult.Failed;
         if (_playerContext.MediaPlayer is not VlcMediaPlayer vlcPlayer || vlcPlayer.PlaybackItem is not { } item)
         {
             return AirPlayCastResult.NothingToCast;
         }
 
-        bool wasPlaying = vlcPlayer.PlaybackState is MediaPlaybackState.Playing;
-        TimeSpan duration = vlcPlayer.NaturalDuration;
-        TimeSpan position = vlcPlayer.Position;
-        if (duration > TimeSpan.Zero && position >= duration - NearEnd) position = TimeSpan.Zero;
-        vlcPlayer.Pause();
-
-        (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position);
-        if (result is not AirPlayCastResult.Started || cast is null)
+        _isStarting = true;
+        long request = _lifetime.BeginRequest();
+        try
         {
-            if (wasPlaying && _playerContext.MediaPlayer == vlcPlayer) vlcPlayer.Play();
-            return result;
-        }
+            bool wasPlaying = vlcPlayer.PlaybackState is MediaPlaybackState.Playing;
+            TimeSpan duration = vlcPlayer.NaturalDuration;
+            TimeSpan position = vlcPlayer.Position;
+            if (duration > TimeSpan.Zero && position >= duration - NearEnd) position = TimeSpan.Zero;
+            vlcPlayer.Pause();
 
-        if (_playerContext.MediaPlayer != vlcPlayer || vlcPlayer.PlaybackItem != item)
+            (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request);
+            if (result is not AirPlayCastResult.Started || cast is null)
+            {
+                if (wasPlaying && result is not AirPlayCastResult.Cancelled && _lifetime.IsCurrent(request) &&
+                    _playerContext.MediaPlayer == vlcPlayer && vlcPlayer.PlaybackItem == item) vlcPlayer.Play();
+                return result;
+            }
+
+            if (!_lifetime.IsCurrent(request) || _playerContext.MediaPlayer != vlcPlayer || vlcPlayer.PlaybackItem != item)
+            {
+                DisposeInBackground(cast);
+                return AirPlayCastResult.Cancelled;
+            }
+
+            _vlcPlayer = vlcPlayer;
+            _renderer = renderer;
+            _castContext.ActiveRenderer = renderer;
+            Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
+                vlcPlayer.NaturalVideoHeight, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
+            _logger.LogInformation("AirPlay cast started");
+            return AirPlayCastResult.Started;
+        }
+        finally
         {
-            // The local player was replaced, or another item was chosen, while the cast
-            // started: the cast is of media no longer wanted, so keep the local choice.
-            DisposeInBackground(cast);
-            return AirPlayCastResult.Cancelled;
+            _isStarting = false;
         }
-
-        _vlcPlayer = vlcPlayer;
-        _renderer = renderer;
-        _castContext.ActiveRenderer = renderer;
-        Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
-            vlcPlayer.NaturalVideoHeight, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
-        _logger.LogInformation("AirPlay cast started");
-        return AirPlayCastResult.Started;
     }
 
     /// <summary>
@@ -135,13 +150,6 @@ public sealed class AirPlayCastCoordinator
     /// </summary>
     public void Stop()
     {
-        if (_startingCast is { } starting)
-        {
-            // Cast.Stop from another thread cancels a pending Start, which then fails as Cancelled.
-            Task.Run(starting.Stop);
-            if (_player is null) return;
-        }
-
         End(lastPosition: null, notify: null);
     }
 
@@ -151,12 +159,13 @@ public sealed class AirPlayCastCoordinator
     /// </summary>
     [DynamicWindowsRuntimeCast(typeof(StorageFile))]
     private async Task<(AirPlayCastResult Result, Cast? Cast)> StartCastAsync(Renderer renderer, PlaybackItem item,
-        TimeSpan position)
+        TimeSpan position, long request)
     {
         if (renderer.AirPlayReceiver is not { } receiver) return (AirPlayCastResult.Failed, null);
 
         // Only files on this device: the library serves the media itself, and network streams cannot be remuxed.
         if (item.OriginalSource is not StorageFile file) return (AirPlayCastResult.NotLocalFile, null);
+        if (!await _lifetime.WaitForCleanupAsync(request)) return (AirPlayCastResult.Cancelled, null);
 
         CastOptions options = new()
         {
@@ -169,31 +178,58 @@ public sealed class AirPlayCastCoordinator
         };
 
         Cast? cast = null;
+        StorageFileMediaSource? source = null;
+        bool contextsOffered = false;
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+        AirPlayAacFragmentStore? cache = null;
+        bool allowStereo = _settingsService.AirPlayAllowStereoConversion;
+#endif
         try
         {
-            StorageFileMediaSource source = await StorageFileMediaSource.OpenAsync(file);
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+            if (allowStereo)
+            {
+                try { cache = await AirPlayAacFragmentStore.CreateAsync(_logger); }
+                catch (Exception e)
+                {
+                    _logger.LogInformation("AirPlay audio cache creation failed: {ErrorType}", e.GetType().Name);
+                    return (AirPlayCastResult.AudioCacheFailed, null);
+                }
+            }
+
+            if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
+            AirPlayAudioPolicy.Configure(options, cache, allowStereo);
+#endif
+            source = await StorageFileMediaSource.OpenAsync(file);
+            if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
+            // The binding consumes both contexts on every Create result, including failure.
+            contextsOffered = true;
             cast = Cast.Create(options, source);
             _startingCast = cast;
             // Start blocks until the TV plays: the remux reads the file's index, the TV may need
             // waking (up to 10 s more), and the start position is applied by a seek.
             Cast started = cast;
             await Task.Run(started.Start);
+            if (!_lifetime.IsCurrent(request))
+            {
+                DisposeInBackground(cast);
+                return (AirPlayCastResult.Cancelled, null);
+            }
+
             return (AirPlayCastResult.Started, cast);
         }
         catch (SendAirPlay2Exception e)
         {
-            AirPlayCastResult result = e.Result switch
-            {
-                ResultCode.Cancelled => AirPlayCastResult.Cancelled,
-                ResultCode.MediaUnsupported => AirPlayCastResult.FormatUnsupported,
-                ResultCode.MediaMalformed => AirPlayCastResult.FileUnreadable,
-                ResultCode.Authentication or ResultCode.ProfileNotFound => AirPlayCastResult.PairingInvalid,
-                ResultCode.Connection => AirPlayCastResult.ConnectionFailed,
-                _ => AirPlayCastResult.Failed,
-            };
+            AirPlayCastResult result = AirPlayCastFailures.FromStart(e.Result);
             _logger.LogInformation("AirPlay cast start failed: {Result} ({ResultCode})", result, e.Result);
             if (cast is not null) DisposeInBackground(cast);
             return (result, null);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogInformation("AirPlay source open failed: {ErrorType}", e.GetType().Name);
+            if (cast is not null) DisposeInBackground(cast);
+            return (AirPlayCastResult.FileUnreadable, null);
         }
         catch (Exception e)
         {
@@ -205,6 +241,16 @@ public sealed class AirPlayCastCoordinator
         finally
         {
             _startingCast = null;
+            if (!contextsOffered)
+            {
+                try { source?.AbandonBeforeTransfer(); }
+                finally
+                {
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+                    cache?.AbandonBeforeTransfer();
+#endif
+                }
+            }
         }
     }
 
@@ -246,7 +292,7 @@ public sealed class AirPlayCastCoordinator
             _logger.LogInformation("AirPlay cast ended: {EndReason}", status.EndReason);
             if (status.EndReason is not EndReason.MediaEnd)
             {
-                End(lastPosition: null, notify: NotificationKind.AirPlayCastEnded);
+                End(lastPosition: null, notify: AirPlayCastFailures.ForTerminal(status));
                 return;
             }
 
@@ -283,6 +329,8 @@ public sealed class AirPlayCastCoordinator
             if (_castingNext)
             {
                 _queuedRequest = (item, position);
+                _lifetime.InvalidateRequests();
+                CancelStartingCast();
                 return;
             }
 
@@ -320,7 +368,8 @@ public sealed class AirPlayCastCoordinator
     {
         if (_renderer is not { } renderer || Retire(keepRequests: true) is not { } previous) return;
         _logger.LogInformation("AirPlay cast moves to another item");
-        (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position);
+        long request = _lifetime.BeginRequest();
+        (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request);
 
         if (previous != _player)
         {
@@ -342,7 +391,7 @@ public sealed class AirPlayCastCoordinator
             if (result is not AirPlayCastResult.Cancelled)
             {
                 WeakReferenceMessenger.Default.Send(new NotificationMessage(NotificationLevel.Info,
-                    NotificationKind.AirPlayNextItemNotCast));
+                    AirPlayCastFailures.ForNextItem(result)));
             }
 
             _logger.LogInformation("AirPlay casting ended: the next item could not be cast ({Result})", result);
@@ -361,6 +410,8 @@ public sealed class AirPlayCastCoordinator
     /// </summary>
     private void End(TimeSpan? lastPosition, NotificationKind? notify, PlaybackItem? localItem = null)
     {
+        _lifetime.InvalidateRequests();
+        CancelStartingCast();
         if (_player is not { } player) return;
         Retire();
         TimeSpan position = lastPosition ?? player.Position;
@@ -458,6 +509,11 @@ public sealed class AirPlayCastCoordinator
     private void OnPlayerContextPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_swapping || e.PropertyName != nameof(PlayerContext.MediaPlayer)) return;
+        if (_isStarting)
+        {
+            _lifetime.InvalidateRequests();
+            CancelStartingCast();
+        }
         if (_player is null || _playerContext.MediaPlayer == _player) return;
         VlcMediaPlayer? orphan = _vlcPlayer;
         _vlcPlayer = null;
@@ -470,7 +526,7 @@ public sealed class AirPlayCastCoordinator
 
     private void DisposeInBackground(Cast cast)
     {
-        Task.Run(() =>
+        _lifetime.ScheduleCleanup(() =>
         {
             try
             {
@@ -480,6 +536,16 @@ public sealed class AirPlayCastCoordinator
             {
                 cast.Dispose();
             }
+        });
+    }
+
+    private void CancelStartingCast()
+    {
+        if (_startingCast is not { } starting) return;
+        _ = Task.Run(() =>
+        {
+            try { starting.Stop(); }
+            catch (Exception e) { _logger.LogDebug("AirPlay start cancellation ended: {ErrorType}", e.GetType().Name); }
         });
     }
 }

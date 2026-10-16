@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Screenbox.Core.ViewModels;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
@@ -17,6 +18,9 @@ public sealed partial class SettingsPage : Page
     internal SettingsPageViewModel ViewModel => (SettingsPageViewModel)DataContext;
 
     internal CommonViewModel Common { get; }
+
+    internal Visibility AirPlayStereoSettingsVisibility => ViewModel.IsAirPlayStereoConversionAvailable
+        ? Visibility.Visible : Visibility.Collapsed;
 
     private string[] VlcCommandLineHelpTextParts { get; }
 

@@ -1,0 +1,19 @@
+<Project>
+  <!-- One profile must be selected consistently for download, restore and packaging. -->
+  <PropertyGroup>
+    <AirPlayStereoAac Condition="'$(AirPlayStereoAac)' == ''">false</AirPlayStereoAac>
+    <AirPlayPackageId>SendAirPlay2</AirPlayPackageId>
+    <AirPlayPackageVersion>0.3.0-ci.207</AirPlayPackageVersion>
+    <AirPlayPackageSha256>e52affdf9f79e20dcd00b59380c9949d1f9b11d1339307f8a2b86ad14e1ffa4d</AirPlayPackageSha256>
+    <AirPlayReleaseTag>nuget-v0.3.0-ci.207</AirPlayReleaseTag>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AirPlayStereoAac)' == 'true'">
+    <BaseIntermediateOutputPath>obj\airplay-stereo-aac\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\airplay-stereo-aac\</BaseOutputPath>
+    <AirPlayPackageId>SendAirPlay2.StereoAac</AirPlayPackageId>
+    <AirPlayPackageVersion>0.5.0-ci.282</AirPlayPackageVersion>
+    <AirPlayPackageSha256>5280f0868721476b2cae9018bd8197c3de3c9f356408781209ec57fd4b9ba4ff</AirPlayPackageSha256>
+    <AirPlayReleaseTag>nuget-stereo-aac-v0.5.0-ci.282</AirPlayReleaseTag>
+    <DefineConstants>$(DefineConstants);SCREENBOX_AIRPLAY_STEREO_AAC</DefineConstants>
+  </PropertyGroup>
+</Project>

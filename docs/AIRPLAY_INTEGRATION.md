@@ -11,6 +11,12 @@ what is built and tested.
 
 ## Implementation status (2026-10-12)
 
+2026-10-16 follow-up: the [experimental x64 automatic-audio integration](AIRPLAY_AUTOMATIC_AUDIO.md)
+adds an explicit build profile and default-off stereo-conversion preference on
+its own branch. Ordinary builds still pin codec-free `ci.207`. Logic/package
+checks pass; fresh Screenbox receiver/queue validation is pending. The historical
+observations below do not validate the new host integration.
+
 | Phase | Fork PR | State |
 | --- | --- | --- |
 | Design | #1 | Merged |
