@@ -1,5 +1,38 @@
 # Experimental x64 AirPlay audio conversion
 
+**2026-10-17 HDR package update:** the opt-in x64 pin now selects published
+`0.5.0-ci.294`, including bounded HEVC SPS PQ/HLG range declarations in HLS
+masters. This corrects the recorded HDR10/Mac grey-screen startup failure.
+The user reports later Apple TV testing suggests the same HDR issue, with no
+recurrence since the correction. Audio policy, stereo permission, quota, host
+controls and ordinary codec-free ci.207 remain unchanged. Local logic tests pass
+113/113 ordinary and 127/127 opt-in; cached/new pin and corruption/profile
+controls pass. The ordinary MSIX builds and matches its two native files without
+codec leakage. The opt-in MSIX builds and matches all 40 native/source/notice
+files. Development 1.0.0.11 is registered in place from that actual MSIX, preserving
+app data and leaving the source manifest unchanged. The AppContainer,
+inspected executable and all six loaded published ci.294 DLL hashes match
+before and after playback. The user confirms both Mac and Apple TV passed
+90-second HDR/DTS playback from zero, pause/resume, forward/backward seeks,
+Stop closure and local-paused handoff. Final owned cache is zero directories/bytes.
+These bounded checks use the separately user-authorized input without retaining
+its identity/path/content. Most recently reported versions are macOS 26.7.1 and
+tvOS 26.6; the current reply reports no change without explicitly reconfirming
+versions. No whole-film, HLG, speaker or discrete converted-surround claim is added.
+The tested MSIX comes from implementation `66660bf7`; later changes are tests/docs.
+The D91 observations below remain historical ci.282 results, not tests of the
+new ci.294 bytes.
+
+The first opt-in CI attempt fails two cleanup-admission cases because the test
+gate releases itself after five seconds before a delayed assertion runs. The
+follow-up keeps that gate closed until explicit test release, drains cleanup in
+`finally`, and uses a separate bounded completion watchdog. Both 113/127 logic
+suites pass again. This changes tests only, not the installed app or cast policy;
+all four corrected-head CI jobs pass at `fbb01d20` in
+[run 39005238604](https://github.com/ilyalissoboi/Screenbox/actions/runs/39005238604).
+Inspect final documentation-head CI separately. No further D94 manual check is
+pending; the full evidence is in [native PR #78](https://github.com/ilyalissoboi/send-airplay2/pull/78).
+
 2026-10-16. The opt-in host integration is implemented on
 `codex/airplay-automatic-audio-x64` in [PR #13](https://github.com/ilyalissoboi/Screenbox/pull/13).
 This adds a build profile and an explicit
@@ -21,9 +54,9 @@ msbuild Screenbox\Screenbox.csproj -restore -p:Configuration=Release -p:Platform
 ```
 
 `AirPlay.Package.props` owns the selected identity/version/tag/hash and compile
-symbol. The opt-in pin is `SendAirPlay2.StereoAac 0.5.0-ci.282`, SHA-256
-`5280f0868721476b2cae9018bd8197c3de3c9f356408781209ec57fd4b9ba4ff`, from the
-[published prerelease](https://github.com/ilyalissoboi/send-airplay2/releases/tag/nuget-stereo-aac-v0.5.0-ci.282).
+symbol. The opt-in pin is `SendAirPlay2.StereoAac 0.5.0-ci.294`, SHA-256
+`a06216e954e8ef1e2452abe8472e95fbbc04c036e5e1c017e4a92642b20c76b8`, from the
+[published prerelease](https://github.com/ilyalissoboi/send-airplay2/releases/tag/nuget-stereo-aac-v0.5.0-ci.294).
 The downloader verifies existing files as well as new downloads. It preserves
 rejected cache files for inspection. x86/ARM64, conflicting runtime identifiers
 and malformed profile flags are refused. Both package identities must not enter
@@ -148,7 +181,10 @@ the recorded Mac/Apple TV. It also checks rapid Next supersession and Stop durin
 a transition, confirming local playback stays paused and caches drain. Consult
 the linked checkpoint for completed versus pending observations; this procedure
 does not request repeating completed tests.
-Use only the original repository-owned controls. No private film is cast.
+That D91 procedure uses only the original repository-owned controls. The D94
+HDR pin follow-up may use the separately user-authorized input, with its identity,
+path and contents omitted from committed evidence; it does not repeat the D91
+queue gate or imply whole-film validation.
 
 Manual observations are requested in chat; Computer Use is not used to confirm
 visual changes. Audio-only speakers and discrete converted surround remain
