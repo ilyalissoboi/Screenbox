@@ -4,6 +4,9 @@ namespace Screenbox.Core.Tests.Casting;
 
 public class AirPlayCastLifetimeTests
 {
+    private static readonly TimeSpan CompletionTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>Admission stays pending until the test releases cleanup, then checks the request ticket.</summary>
     [Test]
     [Arguments(false)]
     [Arguments(true)]
@@ -15,20 +18,31 @@ public class AirPlayCastLifetimeTests
         lifetime.ScheduleCleanup(() =>
         {
             entered.SetResult();
-            if (!release.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Cleanup release timed out.");
+            // Only the test releases cleanup. A timed wait can expire while a busy
+            // runner delays the assertion, falsely making admission complete.
+            release.Wait();
         });
         long request = lifetime.BeginRequest();
         Task<bool> admission = lifetime.WaitForCleanupAsync(request);
         try
         {
-            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await entered.Task.WaitAsync(CompletionTimeout);
             await Assert.That(admission.IsCompleted).IsFalse();
-            if (cancel) lifetime.InvalidateRequests();
+            if (cancel)
+            {
+                lifetime.InvalidateRequests();
+            }
         }
-        finally { release.Set(); }
-        await Assert.That(await admission.WaitAsync(TimeSpan.FromSeconds(5))).IsEqualTo(!cancel);
+        finally
+        {
+            release.Set();
+            // Drain the worker before disposing its gate, including assertion failures.
+            await admission.WaitAsync(CompletionTimeout);
+        }
+        await Assert.That(await admission).IsEqualTo(!cancel);
     }
 
+    /// <summary>Later cleanup remains ordered and logger failures cannot strand the admission barrier.</summary>
     [Test]
     public async Task Admission_ShouldIncludeLaterCleanupAndContinueAfterFailure()
     {
@@ -42,7 +56,7 @@ public class AirPlayCastLifetimeTests
         });
         lifetime.ScheduleCleanup(() =>
         {
-            if (!release.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Cleanup release timed out.");
+            release.Wait();
             order.Add(1);
             throw new IOException("Simulated disposal failure.");
         });
@@ -50,10 +64,18 @@ public class AirPlayCastLifetimeTests
         Task<bool> stale = lifetime.WaitForCleanupAsync(first);
         lifetime.ScheduleCleanup(() => order.Add(2));
         long latest = lifetime.BeginRequest();
-        release.Set();
-        await Assert.That(await stale.WaitAsync(TimeSpan.FromSeconds(5))).IsFalse();
-        await Assert.That(await lifetime.WaitForCleanupAsync(latest).WaitAsync(TimeSpan.FromSeconds(5))).IsTrue();
-        await Assert.That(order.SequenceEqual(new[] { 1, 2 })).IsTrue();
-        await Assert.That(failures).IsEqualTo(1);
+        try
+        {
+            release.Set();
+            await Assert.That(await stale.WaitAsync(CompletionTimeout)).IsFalse();
+            await Assert.That(await lifetime.WaitForCleanupAsync(latest).WaitAsync(CompletionTimeout)).IsTrue();
+            await Assert.That(order.SequenceEqual(new[] { 1, 2 })).IsTrue();
+            await Assert.That(failures).IsEqualTo(1);
+        }
+        finally
+        {
+            release.Set();
+            await lifetime.WaitForCleanupAsync(latest).WaitAsync(CompletionTimeout);
+        }
     }
 }

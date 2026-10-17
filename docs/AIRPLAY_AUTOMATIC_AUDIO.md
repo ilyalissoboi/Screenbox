@@ -15,6 +15,13 @@ and a bounded published-DLL receiver check remain pending for this pin.
 The D91 observations below remain historical ci.282 results, not tests of the
 new ci.294 bytes.
 
+The first opt-in CI attempt fails two cleanup-admission cases because the test
+gate releases itself after five seconds before a delayed assertion runs. The
+follow-up keeps that gate closed until explicit test release, drains cleanup in
+`finally`, and uses a separate bounded completion watchdog. Both 113/127 logic
+suites pass again. This changes tests only, not the installed app or cast policy;
+inspect actual corrected-head CI separately from local results.
+
 2026-10-16. The opt-in host integration is implemented on
 `codex/airplay-automatic-audio-x64` in [PR #13](https://github.com/ilyalissoboi/Screenbox/pull/13).
 This adds a build profile and an explicit
