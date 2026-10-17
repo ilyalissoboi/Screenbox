@@ -8,8 +8,10 @@ recurrence since the correction. Audio policy, stereo permission, quota, host
 controls and ordinary codec-free ci.207 remain unchanged. Local logic tests pass
 113/113 ordinary and 127/127 opt-in; cached/new pin and corruption/profile
 controls pass. The ordinary MSIX builds and matches its two native files without
-codec leakage. The opt-in MSIX and a bounded published-DLL receiver check remain
-pending for this pin.
+codec leakage. The opt-in MSIX builds and matches all 40 native/source/notice
+files. Development 1.0.0.11 is registered in place from that actual MSIX, preserving
+app data and leaving the source manifest unchanged. Runtime hash verification
+and a bounded published-DLL receiver check remain pending for this pin.
 The D91 observations below remain historical ci.282 results, not tests of the
 new ci.294 bytes.
 
