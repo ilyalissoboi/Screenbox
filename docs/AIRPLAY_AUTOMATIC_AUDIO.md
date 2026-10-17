@@ -10,8 +10,16 @@ controls and ordinary codec-free ci.207 remain unchanged. Local logic tests pass
 controls pass. The ordinary MSIX builds and matches its two native files without
 codec leakage. The opt-in MSIX builds and matches all 40 native/source/notice
 files. Development 1.0.0.11 is registered in place from that actual MSIX, preserving
-app data and leaving the source manifest unchanged. Runtime hash verification
-and a bounded published-DLL receiver check remain pending for this pin.
+app data and leaving the source manifest unchanged. The AppContainer,
+inspected executable and all six loaded published ci.294 DLL hashes match
+before and after playback. The user confirms both Mac and Apple TV passed
+90-second HDR/DTS playback from zero, pause/resume, forward/backward seeks,
+Stop closure and local-paused handoff. Final owned cache is zero directories/bytes.
+These bounded checks use the separately user-authorized input without retaining
+its identity/path/content. Most recently reported versions are macOS 26.7.1 and
+tvOS 26.6; the current reply reports no change without explicitly reconfirming
+versions. No whole-film, HLG, speaker or discrete converted-surround claim is added.
+The tested MSIX comes from implementation `66660bf7`; later changes are tests/docs.
 The D91 observations below remain historical ci.282 results, not tests of the
 new ci.294 bytes.
 
@@ -20,7 +28,10 @@ gate releases itself after five seconds before a delayed assertion runs. The
 follow-up keeps that gate closed until explicit test release, drains cleanup in
 `finally`, and uses a separate bounded completion watchdog. Both 113/127 logic
 suites pass again. This changes tests only, not the installed app or cast policy;
-inspect actual corrected-head CI separately from local results.
+all four corrected-head CI jobs pass at `fbb01d20` in
+[run 39005238604](https://github.com/ilyalissoboi/Screenbox/actions/runs/39005238604).
+Inspect final documentation-head CI separately. No further D94 manual check is
+pending; the full evidence is in [native PR #78](https://github.com/ilyalissoboi/send-airplay2/pull/78).
 
 2026-10-16. The opt-in host integration is implemented on
 `codex/airplay-automatic-audio-x64` in [PR #13](https://github.com/ilyalissoboi/Screenbox/pull/13).
