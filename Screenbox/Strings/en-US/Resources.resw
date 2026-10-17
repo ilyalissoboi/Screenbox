@@ -1311,6 +1311,10 @@
     <value>Mac</value>
     <comment>Apple product name in the cast flyout; use the name Apple uses in this language.</comment>
   </data>
+  <data name="SettingsCategoryCasting" xml:space="preserve">
+    <value>Casting</value>
+    <comment>Settings group heading for options that apply when casting media to another device.</comment>
+  </data>
   <data name="SettingsAirPlayStereoConversionHeader" xml:space="preserve">
     <value>Allow stereo audio conversion for AirPlay</value>
   </data>

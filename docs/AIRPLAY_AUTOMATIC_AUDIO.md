@@ -85,10 +85,21 @@ Manual workflow dispatch defaults to ordinary validation; enable the boolean
 `airplay_stereo_aac` input to include the experimental profile. Release creation
 is limited to tag-push events.
 
+## Casting settings layout check (2026-10-17)
+
+Development 1.0.0.12 comes from implementation `6d3a30b4`. Both Release MSIX
+profiles build and verify their two/40 pinned payload files; its running
+executable matches the inspected opt-in MSIX. Registration preserves app data
+and source manifest. The user confirms the Casting group, audio icon alignment
+and toggle persistence after leaving/reopening Settings. This uses written
+instructions, without Computer Use visual confirmation or a new receiver test.
+
 ## User policy and storage
 
 Only the experimental build shows **Allow stereo audio conversion for AirPlay**
-in Settings, initially off. The description explains that surround/lossless
+in Settings under its own **Casting** group, with the existing audio icon and
+standard settings-card layout. The group heading and card are both hidden in
+ordinary builds. The preference is initially off. The description explains that surround/lossless
 audio becomes stereo and the choice applies to the next cast. The host always
 sets the permission explicitly: `PreserveOriginal` while off, `AllowStereo` while
 on. It uses `AutomaticAudioHls` with `AppleHlsV1`. Eligible AAC-LC/AC-3/E-AC-3 is

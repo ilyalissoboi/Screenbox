@@ -317,17 +317,6 @@
 
                 <!--#region General Section-->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="{x:Bind strings:Resources.SettingsCategoryGeneral}" />
-                <!--  Opt-in AirPlay audio permission  -->
-                <ctc:SettingsCard
-                    Margin="{StaticResource SettingsCardMargin}"
-                    Description="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
-                    Header="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
-                    Visibility="{x:Bind AirPlayStereoSettingsVisibility, Mode=OneTime}">
-                    <ToggleSwitch
-                        AutomationProperties.HelpText="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
-                        AutomationProperties.Name="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
-                        IsOn="{x:Bind ViewModel.AirPlayAllowStereoConversion, Mode=TwoWay}" />
-                </ctc:SettingsCard>
                 <!--  Enqueue All Files In Folder  -->
                 <ctc:SettingsCard
                     x:Name="SettingsEnqueueAllFilesInFolderCard"
@@ -374,6 +363,26 @@
                         Content="{x:Bind strings:Resources.OpenFolder}" />
                 </ctc:SettingsCard>
                 <!--#endregion-->
+
+                <!--  Casting section  -->
+                <TextBlock
+                    Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                    Text="{x:Bind strings:Resources.SettingsCategoryCasting, Mode=OneTime}"
+                    Visibility="{x:Bind AirPlayStereoSettingsVisibility, Mode=OneTime}" />
+
+                <!--  Opt-in AirPlay audio permission  -->
+                <ctc:SettingsCard
+                    Margin="{StaticResource SettingsCardMargin}"
+                    Description="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
+                    Header="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
+                    HeaderIcon="{ui:FontIcon FontFamily={StaticResource ScreenboxSymbolThemeFontFamily},
+                                             Glyph={StaticResource AudioGlyph}}"
+                    Visibility="{x:Bind AirPlayStereoSettingsVisibility, Mode=OneTime}">
+                    <ToggleSwitch
+                        AutomationProperties.HelpText="{x:Bind strings:Resources.SettingsAirPlayStereoConversionDescription, Mode=OneTime}"
+                        AutomationProperties.Name="{x:Bind strings:Resources.SettingsAirPlayStereoConversionHeader, Mode=OneTime}"
+                        IsOn="{x:Bind ViewModel.AirPlayAllowStereoConversion, Mode=TwoWay}" />
+                </ctc:SettingsCard>
 
                 <!--  Player section  -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" Text="{x:Bind strings:Resources.SettingsCategoryPlayer}" />
