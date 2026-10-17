@@ -88,7 +88,9 @@ is limited to tag-push events.
 ## User policy and storage
 
 Only the experimental build shows **Allow stereo audio conversion for AirPlay**
-in Settings, initially off. The description explains that surround/lossless
+in Settings under its own **Casting** group, with the existing audio icon and
+standard settings-card layout. The group heading and card are both hidden in
+ordinary builds. The preference is initially off. The description explains that surround/lossless
 audio becomes stereo and the choice applies to the next cast. The host always
 sets the permission explicitly: `PreserveOriginal` while off, `AllowStereo` while
 on. It uses `AutomaticAudioHls` with `AppleHlsV1`. Eligible AAC-LC/AC-3/E-AC-3 is
