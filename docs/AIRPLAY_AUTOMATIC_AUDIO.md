@@ -85,6 +85,15 @@ Manual workflow dispatch defaults to ordinary validation; enable the boolean
 `airplay_stereo_aac` input to include the experimental profile. Release creation
 is limited to tag-push events.
 
+## Casting settings layout check (2026-10-17)
+
+Development 1.0.0.12 comes from implementation `6d3a30b4`. Both Release MSIX
+profiles build and verify their two/40 pinned payload files; its running
+executable matches the inspected opt-in MSIX. Registration preserves app data
+and source manifest. The user confirms the Casting group, audio icon alignment
+and toggle persistence after leaving/reopening Settings. This uses written
+instructions, without Computer Use visual confirmation or a new receiver test.
+
 ## User policy and storage
 
 Only the experimental build shows **Allow stereo audio conversion for AirPlay**
