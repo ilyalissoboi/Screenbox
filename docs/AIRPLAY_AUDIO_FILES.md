@@ -36,8 +36,12 @@ extensions retaining existing behavior and a return to video policy after M4A.
 Existing cleanup/admission/cancellation tests remain. These tests instantiate no
 XAML and do not prove receiver interoperability.
 
-Both actual Release MSIX builds, pinned-payload inspection, in-place development
-registration/running binary checks and the written manual gate are pending.
+Both actual Release MSIX builds and pinned-payload inspection pass (two ordinary
+native files; all 40 opt-in native/source/notice files). Existing translation,
+legacy migration and third-party trim warnings remain. Development 1.0.0.13 is
+registered in place from the actual opt-in MSIX with source manifest and data
+preserved; only the extracted manifest version changes. Full loaded-module
+checks await the user opening Cast. The written manual gate is pending.
 The user confirms both receivers available with macOS 26.7.1/tvOS 26.6 unchanged.
 Manual checks will cover audio controls, current-position start, cancellation,
 Stop/local-paused handoff, natural audio/video/audio queue advance, rapid Next

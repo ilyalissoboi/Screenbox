@@ -2,8 +2,8 @@
 
 **2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
 adds progressive `audio/mp4` for local M4A queue items in both build profiles,
-bypassing video-required HLS and the conversion cache. Logic tests pass;
-Screenbox package/receiver checks are pending. This does not add automatic
+bypassing video-required HLS and the conversion cache. Both logic/MSIX/payload
+profiles pass; loaded-module and written Screenbox receiver checks are pending. This does not add automatic
 conversion of unsupported audio-only codecs or a new native package.
 
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
