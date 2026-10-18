@@ -5,6 +5,26 @@ Screenbox slice after native documentation PR #82 merges as `afb9ee8`, following
 completed native D97 and packaged UWP D98 AAC/M4A gates. Those observations do
 not establish receiver behavior for this Screenbox build.
 
+## Review follow-up: video dimensions
+
+The two PR #16 review findings are addressed in the current branch. An already-
+open video keeps VLC's effective natural width/height; raw track dimensions no
+longer replace it. M4A stays `(0, 0)`. A queued video's size is determined from
+its own metadata, never inherited from the previous audio/video player. When
+needed, an independently owned playback descriptor/brokered grant is parsed
+with the existing bounded WinRT-file helper and disposed in `finally`, without
+opening the paused local player. Stop and superseding requests cancel that
+metadata read; the request ticket is rechecked before source/native creation.
+Missing/invalid dimensions fail through the normal paused local handoff.
+
+Queued display size accounts for sample aspect ratio and axis-swapping
+orientation, with zero/overflow checks. Both pure logic suites pass 142/142
+ordinary and 157/157 opt-in. Current-size preservation, unopened queued metadata,
+audio bypass, cancellation, all orientations, unspecified SAR and invalid-size
+controls are covered. Both actual MSIX and a focused written layout/queue check
+are pending. The original 1.0.0.13 playback gate below does not verify these new
+review-follow-up bytes. No transport, MIME, pin, native API or audio policy changes.
+
 ## Implemented routing
 
 For each brokered local file, including every new queue item, `.m4a` selects
@@ -24,11 +44,11 @@ No third-party implementation, dependency or new transport is added.
 The existing coordinator continues to own pause-before-start, source lifetime,
 serial cleanup, Stop/cancellation, superseded queue requests, repeat-one,
 natural-end advance and paused local handoff. M4A player dimensions are zero;
-queued video uses its parsed dimensions when available, with the existing
-fallback otherwise. The format-error resource now refers to media rather than
+current video keeps VLC's natural size, and queued video resolves its own display
+metadata before starting. The format-error resource now refers to media rather than
 only video. No new settings or layout are introduced.
 
-## Validation checkpoint
+## Original 1.0.0.13 validation checkpoint
 
 VS 2026 MSBuild builds both Core profiles. Pure logic suites pass 122/122 ordinary
 and 137/137 opt-in. Routing controls cover case-insensitive M4A, unimplemented

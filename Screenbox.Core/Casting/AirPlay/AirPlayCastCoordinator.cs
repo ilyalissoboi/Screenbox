@@ -1,12 +1,14 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Screenbox.Core.Contexts;
 using Screenbox.Core.Enums;
 using Screenbox.Core.Events;
+using Screenbox.Core.Helpers;
 using Screenbox.Core.Messages;
 using Screenbox.Core.Models;
 using Screenbox.Core.Playback;
@@ -51,6 +53,9 @@ public sealed class AirPlayCastCoordinator
     // How long VLC may take to open an item it is handed back after a cast moved on.
     private static readonly TimeSpan LocalOpenTimeout = TimeSpan.FromSeconds(10);
 
+    // Metadata preparation never opens the queued item in the local player.
+    private static readonly TimeSpan QueuedVideoParseTimeout = TimeSpan.FromSeconds(5);
+
     private readonly PlayerContext _playerContext;
     private readonly CastContext _castContext;
     private readonly IPlayerService _playerService;
@@ -63,6 +68,7 @@ public sealed class AirPlayCastCoordinator
     private VlcMediaPlayer? _vlcPlayer;
     private Renderer? _renderer;
     private Cast? _startingCast;
+    private CancellationTokenSource? _videoMetadataCancellation;
     private bool _swapping;
     private bool _isStarting;
 
@@ -142,7 +148,7 @@ public sealed class AirPlayCastCoordinator
             _vlcPlayer = vlcPlayer;
             _renderer = renderer;
             _castContext.ActiveRenderer = renderer;
-            (uint width, uint height) = VideoSize(item, vlcPlayer.NaturalVideoWidth, vlcPlayer.NaturalVideoHeight);
+            (uint width, uint height) = CurrentVideoSize(item, vlcPlayer.NaturalVideoWidth, vlcPlayer.NaturalVideoHeight);
             Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, width,
                 height, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
             _logger.LogInformation("AirPlay cast started");
@@ -379,7 +385,24 @@ public sealed class AirPlayCastCoordinator
         if (_renderer is not { } renderer || Retire(keepRequests: true) is not { } previous) return;
         _logger.LogInformation("AirPlay cast moves to another item");
         long request = _lifetime.BeginRequest();
-        (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request);
+        (uint width, uint height) = (0, 0);
+        AirPlayCastResult result;
+        Cast? cast = null;
+        try
+        {
+            (width, height) = await QueuedVideoSizeAsync(item, previous.LocalPlayer);
+            // StartCastAsync rechecks this ticket before creating a source/native cast.
+            (result, cast) = await StartCastAsync(renderer, item, position, request);
+        }
+        catch (OperationCanceledException)
+        {
+            result = AirPlayCastResult.Cancelled;
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("AirPlay queued video metadata failed: {ErrorType}", e.GetType().Name);
+            result = _lifetime.IsCurrent(request) ? AirPlayCastResult.FileUnreadable : AirPlayCastResult.Cancelled;
+        }
 
         if (previous != _player)
         {
@@ -409,33 +432,72 @@ public sealed class AirPlayCastCoordinator
         }
 
         previous.ItemRequested -= OnItemRequested;
-        (uint width, uint height) = VideoSize(item, previous.NaturalVideoWidth, previous.NaturalVideoHeight);
         Activate(new AirPlayMediaPlayer(previous.LocalPlayer, cast, item, position, item.Duration ?? TimeSpan.Zero,
             width, height, previous.Volume, previous.IsMuted, _logger), cast);
     }
 
     /// <summary>
-    /// Audio items must not inherit the previous video's dimensions. For queued video,
-    /// use its parsed dimensions when available; otherwise keep the existing fallback.
-    /// Delivery selection does not depend on parsing a not-yet-opened queue item.
+    /// Keeps VLC's effective dimensions for the already-open video, while M4A remains audio-only.
     /// </summary>
     [DynamicWindowsRuntimeCast(typeof(StorageFile))]
-    private static (uint Width, uint Height) VideoSize(PlaybackItem item, uint fallbackWidth, uint fallbackHeight)
+    private static (uint Width, uint Height) CurrentVideoSize(PlaybackItem item, uint naturalWidth, uint naturalHeight)
     {
-        if (item.OriginalSource is StorageFile file && AirPlayMediaDelivery.IsProgressiveAudio(file.FileType))
-        {
-            return (0, 0);
-        }
+        return item.OriginalSource is StorageFile file
+            ? AirPlayVideoDimensions.Current(file.FileType, naturalWidth, naturalHeight)
+            : (naturalWidth, naturalHeight);
+    }
 
-        foreach (LibVLCSharp.Shared.MediaTrack track in item.Media.Tracks)
+    /// <summary>
+    /// Reads queued video metadata independently of the previous player. Brokered-file parsing is
+    /// bounded and cancellable by Stop/supersession; unknown dimensions fail before casting.
+    /// </summary>
+    [DynamicWindowsRuntimeCast(typeof(StorageFile))]
+    private async Task<(uint Width, uint Height)> QueuedVideoSizeAsync(PlaybackItem item, VlcMediaPlayer localPlayer)
+    {
+        // StartCastAsync reports NotLocalFile without parsing a network stream.
+        if (item.OriginalSource is not StorageFile file) return (0, 0);
+        using var cancellation = new CancellationTokenSource();
+        _videoMetadataCancellation = cancellation;
+        try
         {
-            if (track.TrackType is LibVLCSharp.Shared.TrackType.Video)
+            return await AirPlayVideoDimensions.QueuedAsync(file.FileType, async token =>
             {
-                return (track.Data.Video.Width, track.Data.Video.Height);
-            }
-        }
+                PlaybackItem? probe = null;
+                try
+                {
+                    var tracks = item.Media.Tracks;
+                    if (!Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Video))
+                    {
+                        // Own a separate descriptor/grant so parsing does not race the queue's
+                        // metadata work, and its lifetime survives disposal of the original item.
+                        probe = _playerService.CreatePlaybackItem(localPlayer, file);
+                        // Existing helper supports winrt:// brokered-file MRLs and bounds an
+                        // already-in-flight parse too. It does not open the paused local player.
+                        await probe.Media.ParseAsync(QueuedVideoParseTimeout, token);
+                        token.ThrowIfCancellationRequested();
+                        tracks = probe.Media.Tracks;
+                    }
 
-        return (fallbackWidth, fallbackHeight);
+                    foreach (LibVLCSharp.Shared.MediaTrack track in tracks)
+                    {
+                        if (track.TrackType is not LibVLCSharp.Shared.TrackType.Video) continue;
+                        var video = track.Data.Video;
+                        return AirPlayVideoDimensions.FromTrack(video.Width, video.Height, video.SarNum,
+                            video.SarDen, video.Orientation);
+                    }
+
+                    return (0u, 0u);
+                }
+                finally
+                {
+                    if (probe is not null) _playerService.DisposePlaybackItem(probe);
+                }
+            }, cancellation.Token);
+        }
+        finally
+        {
+            if (_videoMetadataCancellation == cancellation) _videoMetadataCancellation = null;
+        }
     }
 
     /// <summary>
@@ -576,6 +638,15 @@ public sealed class AirPlayCastCoordinator
 
     private void CancelStartingCast()
     {
+        if (_videoMetadataCancellation is { } metadata)
+        {
+            _ = Task.Run(() =>
+            {
+                try { metadata.Cancel(); }
+                catch (ObjectDisposedException) { /* Metadata completed before this worker ran. */ }
+                catch (Exception e) { _logger.LogDebug("AirPlay metadata cancellation ended: {ErrorType}", e.GetType().Name); }
+            });
+        }
         if (_startingCast is not { } starting) return;
         _ = Task.Run(() =>
         {
