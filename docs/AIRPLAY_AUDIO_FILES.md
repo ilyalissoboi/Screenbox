@@ -21,8 +21,11 @@ Queued display size accounts for sample aspect ratio and axis-swapping
 orientation, with zero/overflow checks. Both pure logic suites pass 142/142
 ordinary and 157/157 opt-in. Current-size preservation, unopened queued metadata,
 audio bypass, cancellation, all orientations, unspecified SAR and invalid-size
-controls are covered. Both actual MSIX and a focused written layout/queue check
-are pending. The original 1.0.0.13 playback gate below does not verify these new
+controls are covered. Both actual MSIX/pinned payload checks pass (two ordinary
+files; all 40 opt-in files). Development 1.0.0.14 is installed in place with data
+preserved; loaded-runtime and focused written layout/queue checks are pending.
+Both review threads are resolved. The original 1.0.0.13 playback gate below does
+not verify these new
 review-follow-up bytes. No transport, MIME, pin, native API or audio policy changes.
 
 ## Implemented routing

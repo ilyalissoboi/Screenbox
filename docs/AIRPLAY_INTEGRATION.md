@@ -2,8 +2,8 @@
 
 **PR #16 review follow-up:** current video now preserves VLC's natural display
 size; an unopened queued video resolves its own metadata instead of inheriting
-an audio item's zero dimensions. Logic suites pass 142/157; package/focused
-manual checks are pending. Earlier 1.0.0.13 playback evidence remains scoped to
+an audio item's zero dimensions. Logic suites pass 142/157 and both MSIX/payload
+profiles pass; loaded-runtime/focused manual checks in 1.0.0.14 are pending. Earlier 1.0.0.13 playback evidence remains scoped to
 its original bytes. See [the active follow-up](AIRPLAY_AUDIO_FILES.md#review-follow-up-video-dimensions).
 
 **2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
