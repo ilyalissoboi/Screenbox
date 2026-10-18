@@ -1235,7 +1235,7 @@
     <value>Only files on this device can be cast with AirPlay.</value>
   </data>
   <data name="AirPlayCastFormatUnsupportedMessage" xml:space="preserve">
-    <value>This video's format can't be cast with AirPlay.</value>
+    <value>This media format can't be cast with AirPlay.</value>
   </data>
   <data name="AirPlayCastFileUnreadableMessage" xml:space="preserve">
     <value>This file couldn't be read for AirPlay. It may be damaged.</value>

@@ -1,5 +1,11 @@
 # AirPlay casting: integration design
 
+**2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
+adds progressive `audio/mp4` for local M4A queue items in both build profiles,
+bypassing video-required HLS and the conversion cache. Logic tests pass;
+Screenbox package/receiver checks are pending. This does not add automatic
+conversion of unsupported audio-only codecs or a new native package.
+
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
 (PRs #1-#10, 2026-10-12); Mac package update and Forget-device follow-up are merged, with receiver/UI checks passed in the recorded scope.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to

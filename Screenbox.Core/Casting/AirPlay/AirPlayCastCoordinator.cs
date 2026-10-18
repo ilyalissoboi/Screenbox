@@ -94,8 +94,9 @@ public sealed class AirPlayCastCoordinator
 
     /// <summary>
     /// Casts the item VLC has loaded to an AirPlay renderer from its current
-    /// position, through the library's HLS remux (user decision 7). VLC is paused
-    /// first; the players are swapped only once the TV plays, and on failure VLC
+    /// position, through progressive M4A delivery or the library's video HLS remux.
+    /// VLC is paused first; the players are swapped only once the receiver plays,
+    /// and on failure VLC
     /// resumes as it was. Call on the UI thread.
     /// </summary>
     public async Task<AirPlayCastResult> StartAsync(Renderer renderer)
@@ -141,8 +142,9 @@ public sealed class AirPlayCastCoordinator
             _vlcPlayer = vlcPlayer;
             _renderer = renderer;
             _castContext.ActiveRenderer = renderer;
-            Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, vlcPlayer.NaturalVideoWidth,
-                vlcPlayer.NaturalVideoHeight, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
+            (uint width, uint height) = VideoSize(item, vlcPlayer.NaturalVideoWidth, vlcPlayer.NaturalVideoHeight);
+            Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, width,
+                height, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
             _logger.LogInformation("AirPlay cast started");
             return AirPlayCastResult.Started;
         }
@@ -171,7 +173,7 @@ public sealed class AirPlayCastCoordinator
     {
         if (renderer.AirPlayReceiver is not { } receiver) return (AirPlayCastResult.Failed, null);
 
-        // Only files on this device: the library serves the media itself, and network streams cannot be remuxed.
+        // Only brokered local files: the library serves the media itself.
         if (item.OriginalSource is not StorageFile file) return (AirPlayCastResult.NotLocalFile, null);
         if (!await _lifetime.WaitForCleanupAsync(request)) return (AirPlayCastResult.Cancelled, null);
 
@@ -181,16 +183,16 @@ public sealed class AirPlayCastCoordinator
             ReceiverPort = receiver.Port,
             Profile = AirPlayProfiles.ForReceiver(receiver.Id),
             CredentialStore = new PasswordVaultCredentialStore(),
-            Delivery = CastDelivery.HlsRemux,
             StartPositionSeconds = position.TotalSeconds,
         };
+        bool progressiveAudio = AirPlayMediaDelivery.Configure(options, file.FileType);
 
         Cast? cast = null;
         StorageFileMediaSource? source = null;
         bool contextsOffered = false;
 #if SCREENBOX_AIRPLAY_STEREO_AAC
         AirPlayAacFragmentStore? cache = null;
-        bool allowStereo = _settingsService.AirPlayAllowStereoConversion;
+        bool allowStereo = !progressiveAudio && _settingsService.AirPlayAllowStereoConversion;
 #endif
         try
         {
@@ -206,7 +208,7 @@ public sealed class AirPlayCastCoordinator
             }
 
             if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
-            AirPlayAudioPolicy.Configure(options, cache, allowStereo);
+            if (!progressiveAudio) AirPlayAudioPolicy.Configure(options, cache, allowStereo);
 #endif
             source = await StorageFileMediaSource.OpenAsync(file);
             if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
@@ -214,7 +216,7 @@ public sealed class AirPlayCastCoordinator
             contextsOffered = true;
             cast = Cast.Create(options, source);
             _startingCast = cast;
-            // Start blocks until the TV plays: the remux reads the file's index, the TV may need
+            // Start blocks until the receiver plays: HLS reads the file's index, the TV may need
             // waking (up to 10 s more), and the start position is applied by a seek.
             Cast started = cast;
             await Task.Run(started.Start);
@@ -407,8 +409,33 @@ public sealed class AirPlayCastCoordinator
         }
 
         previous.ItemRequested -= OnItemRequested;
+        (uint width, uint height) = VideoSize(item, previous.NaturalVideoWidth, previous.NaturalVideoHeight);
         Activate(new AirPlayMediaPlayer(previous.LocalPlayer, cast, item, position, item.Duration ?? TimeSpan.Zero,
-            previous.NaturalVideoWidth, previous.NaturalVideoHeight, previous.Volume, previous.IsMuted, _logger), cast);
+            width, height, previous.Volume, previous.IsMuted, _logger), cast);
+    }
+
+    /// <summary>
+    /// Audio items must not inherit the previous video's dimensions. For queued video,
+    /// use its parsed dimensions when available; otherwise keep the existing fallback.
+    /// Delivery selection does not depend on parsing a not-yet-opened queue item.
+    /// </summary>
+    [DynamicWindowsRuntimeCast(typeof(StorageFile))]
+    private static (uint Width, uint Height) VideoSize(PlaybackItem item, uint fallbackWidth, uint fallbackHeight)
+    {
+        if (item.OriginalSource is StorageFile file && AirPlayMediaDelivery.IsProgressiveAudio(file.FileType))
+        {
+            return (0, 0);
+        }
+
+        foreach (LibVLCSharp.Shared.MediaTrack track in item.Media.Tracks)
+        {
+            if (track.TrackType is LibVLCSharp.Shared.TrackType.Video)
+            {
+                return (track.Data.Video.Width, track.Data.Video.Height);
+            }
+        }
+
+        return (fallbackWidth, fallbackHeight);
     }
 
     /// <summary>
