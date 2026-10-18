@@ -3,8 +3,10 @@
 **2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
 adds progressive `audio/mp4` for local M4A queue items in both build profiles,
 bypassing video-required HLS and the conversion cache. Both logic/MSIX/payload
-profiles pass; loaded-module and written Screenbox receiver checks are pending. This does not add automatic
-conversion of unsupported audio-only codecs or a new native package.
+profiles pass; the recorded opt-in x64 Mac/Apple TV controls, cancellation,
+mixed queue and transition-Stop gate passes by written user confirmation.
+This does not add automatic conversion of unsupported audio-only codecs or a
+new native package.
 
 **2026-10-17 HDR package update:** the opt-in x64 pin now selects published
 `0.5.0-ci.294`, including bounded HEVC SPS PQ/HLG range declarations in HLS

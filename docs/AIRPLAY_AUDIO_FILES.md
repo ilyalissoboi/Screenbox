@@ -1,7 +1,7 @@
 # AirPlay AAC/M4A audio files
 
-2026-10-18, implementation in progress. The user authorizes the next Screenbox
-slice after native documentation PR #82 merges as `afb9ee8`, following the
+2026-10-18, recorded opt-in x64 host gate passed. The user authorizes the
+Screenbox slice after native documentation PR #82 merges as `afb9ee8`, following the
 completed native D97 and packaged UWP D98 AAC/M4A gates. Those observations do
 not establish receiver behavior for this Screenbox build.
 
@@ -41,12 +41,36 @@ native files; all 40 opt-in native/source/notice files). Existing translation,
 legacy migration and third-party trim warnings remain. Development 1.0.0.13 is
 registered in place from the actual opt-in MSIX with source manifest and data
 preserved; only the extracted manifest version changes. Full loaded-module
-checks await the user opening Cast. The written manual gate is pending.
-The user confirms both receivers available with macOS 26.7.1/tvOS 26.6 unchanged.
-Manual checks will cover audio controls, current-position start, cancellation,
-Stop/local-paused handoff, natural audio/video/audio queue advance, rapid Next
-and Stop during transition. Written user confirmation is used, without Computer
-Use visual confirmation. Preserve any failed attempts and exact tested bytes.
+checks pass for the actual AppContainer, inspected executable and all six loaded
+published ci.294 DLLs. All four fork CI jobs pass at `9c5202bf`;
+release is intentionally skipped. Inspect final documentation-head CI separately.
+
+The user confirms Mac consent cancellation closes its prompt with the app
+responsive/local paused and no error. On BOTH Mac and Apple TV, conversion OFF
+and ON pass M4A audible current-position start near eight seconds, pause/resume,
+seek to about 32/back to eight and clean Stop/local-paused handoff. With
+conversion ON/repeat OFF, the owned audio/video/audio queue advances naturally
+with correct output and local paused at queue end. Rapid Next twice reaches
+the third audio; separate Next/immediate Stop during a transition stops playback
+without delayed restart, keeping local paused and the app responsive. The user
+explicitly confirms macOS 26.7.1/tvOS 26.6 unchanged. Written user observations
+are used, without Computer Use visual confirmation or a timed sender trace.
+
+The user intentionally closes Screenbox after the checks. Post-test registered
+files match, and the reopened process independently passes the exact executable,
+AppContainer and six loaded hashes. This is not a same-process before/after
+capture. Final owned cache is empty; combined audio/video sampling observes at
+most one empty child, with no per-action attribution or continuous-coverage claim.
+No further D99 receiver check is pending. The queue procedure permits seeking
+near clip ends; it does not prove uninterrupted full-file/long-audio playback.
+Repeat-one is unchanged, with no new receiver observation in this slice.
+
+The tested MSIX is compiled at `aff57b6f`; later changes are documentation only.
+The full [native gate record](https://github.com/ilyalissoboi/send-airplay2/blob/codex/screenbox-aac-routing-checkpoint/docs/screenbox-audio-files.md)
+preserves hashes, exact user replies and limits in companion native PR #83.
+Ordinary ci.207 has logic/build/payload checks, with no new receiver gate.
+Unsupported audio-only conversion remains a separate follow-up; no input codec
+coverage is inferred from the M4A extension. No playback failure is reported.
 
 No release or native package publication is part of this slice. Audio-only
 speakers/HomePod/RAOP, discrete converted surround, Chromecast hardware checks
