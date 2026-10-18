@@ -1,5 +1,19 @@
 # AirPlay casting: integration design
 
+**PR #16 review follow-up:** current video now preserves VLC's natural display
+size; an unopened queued video resolves its own metadata instead of inheriting
+an audio item's zero dimensions. Logic suites pass 142/157 and both MSIX/payload
+profiles pass; loaded-runtime/focused manual checks in 1.0.0.14 are pending. Earlier 1.0.0.13 playback evidence remains scoped to
+its original bytes. See [the active follow-up](AIRPLAY_AUDIO_FILES.md#review-follow-up-video-dimensions).
+
+**2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
+adds progressive `audio/mp4` for local M4A queue items in both build profiles,
+bypassing video-required HLS and the conversion cache. Both logic/MSIX/payload
+profiles pass; the recorded opt-in x64 Mac/Apple TV controls, cancellation,
+mixed queue and transition-Stop gate passes by written user confirmation.
+This does not add automatic conversion of unsupported audio-only codecs or a
+new native package.
+
 Status: **implemented through phase 4b and cosmetic follow-ups in the fork
 (PRs #1-#10, 2026-10-12); Mac package update and Forget-device follow-up are merged, with receiver/UI checks passed in the recorded scope.** Written 2026-10-09 against `main` at
 `6870eb0f` and revised as the work went on. It adds AirPlay video casting to

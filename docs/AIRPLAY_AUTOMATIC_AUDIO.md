@@ -1,5 +1,19 @@
 # Experimental x64 AirPlay audio conversion
 
+**PR #16 review follow-up:** current video now preserves VLC's natural display
+size; an unopened queued video resolves its own metadata instead of inheriting
+an audio item's zero dimensions. Logic suites pass 142/157 and both MSIX/payload
+profiles pass; loaded-runtime/focused manual checks in 1.0.0.14 are pending. Earlier 1.0.0.13 playback evidence remains scoped to
+its original bytes. See [the active follow-up](AIRPLAY_AUDIO_FILES.md#review-follow-up-video-dimensions).
+
+**2026-10-18 audio-file follow-up:** [AAC/M4A routing](AIRPLAY_AUDIO_FILES.md)
+adds progressive `audio/mp4` for local M4A queue items in both build profiles,
+bypassing video-required HLS and the conversion cache. Both logic/MSIX/payload
+profiles pass; the recorded opt-in x64 Mac/Apple TV controls, cancellation,
+mixed queue and transition-Stop gate passes by written user confirmation.
+This does not add automatic conversion of unsupported audio-only codecs or a
+new native package.
+
 **2026-10-17 HDR package update:** the opt-in x64 pin now selects published
 `0.5.0-ci.294`, including bounded HEVC SPS PQ/HLG range declarations in HLS
 masters. This corrects the recorded HDR10/Mac grey-screen startup failure.
