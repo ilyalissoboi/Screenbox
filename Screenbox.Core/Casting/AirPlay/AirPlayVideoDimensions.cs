@@ -14,7 +14,7 @@ internal static class AirPlayVideoDimensions
         audioOnly ? (0, 0) : (naturalWidth, naturalHeight);
 
     /// <summary>
-    /// Audio needs no metadata. A queued video must supply its own nonzero display size;
+    /// Classified audio needs no video-size read. A queued video supplies its own display size;
     /// the cancellable metadata reader owns its parse timeout and must honor the token.
     /// Failure leaves the coordinator's normal paused local handoff in charge.
     /// </summary>

@@ -50,10 +50,12 @@ missing tracks, profile/MIME reset between mixed items, permission independence,
 finite quota and existing dimension/cancellation/lifetime controls. Both pinned
 downloads, corruption refusals and architecture/profile guards pass.
 
-The actual opt-in Release MSIX builds; all 40 pinned native/source/notice files
-match. Development 1.0.0.15 is registered in place with identity/data preserved
-and only its extracted manifest version changed. Ordinary MSIX inspection and
-loaded-runtime/manual checks are pending. Existing translation, legacy migration
+Both actual Release MSIX profiles build. Distribution inspection matches all 40
+opt-in native/source/notice files and both ordinary DLLs, with no ordinary codec
+leakage. Development 1.0.0.15 is registered in place with identity/data preserved
+and only its extracted manifest version changed. Its actual AppContainer/package
+identity, executable and all six loaded ci.330 DLLs match. Focused manual checks
+are pending. Existing translation, legacy migration
 and third-party trim warnings remain; no native interoperability is inferred
 from logic or packaging success.
 
