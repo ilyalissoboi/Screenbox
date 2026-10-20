@@ -54,7 +54,7 @@ public sealed class AirPlayCastCoordinator
     private static readonly TimeSpan LocalOpenTimeout = TimeSpan.FromSeconds(10);
 
     // Metadata preparation never opens the queued item in the local player.
-    private static readonly TimeSpan QueuedVideoParseTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan QueuedMediaParseTimeout = TimeSpan.FromSeconds(5);
 
     private readonly PlayerContext _playerContext;
     private readonly CastContext _castContext;
@@ -68,7 +68,7 @@ public sealed class AirPlayCastCoordinator
     private VlcMediaPlayer? _vlcPlayer;
     private Renderer? _renderer;
     private Cast? _startingCast;
-    private CancellationTokenSource? _videoMetadataCancellation;
+    private CancellationTokenSource? _mediaMetadataCancellation;
     private bool _swapping;
     private bool _isStarting;
 
@@ -100,11 +100,12 @@ public sealed class AirPlayCastCoordinator
 
     /// <summary>
     /// Casts the item VLC has loaded to an AirPlay renderer from its current
-    /// position, through progressive M4A delivery or the library's video HLS remux.
+    /// position, using the item's explicit audio/video policy in opt-in builds.
     /// VLC is paused first; the players are swapped only once the receiver plays,
     /// and on failure VLC
     /// resumes as it was. Call on the UI thread.
     /// </summary>
+    [DynamicWindowsRuntimeCast(typeof(StorageFile))]
     public async Task<AirPlayCastResult> StartAsync(Renderer renderer)
     {
         if (_player is not null || _isStarting || _castingNext) return AirPlayCastResult.Failed;
@@ -117,13 +118,32 @@ public sealed class AirPlayCastCoordinator
         long request = _lifetime.BeginRequest();
         try
         {
+            bool audioOnly;
+            try
+            {
+                if (item.OriginalSource is not StorageFile file) return AirPlayCastResult.NotLocalFile;
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+                var tracks = item.Media.Tracks;
+                audioOnly = AirPlayMediaDelivery.IsAudioOnly(file.FileType,
+                    Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Audio),
+                    Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Video));
+#else
+                audioOnly = AirPlayMediaDelivery.IsAudioOnly(file.FileType, false, false);
+#endif
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation("AirPlay media metadata failed: {ErrorType}", e.GetType().Name);
+                return AirPlayCastResult.FileUnreadable;
+            }
+
             bool wasPlaying = vlcPlayer.PlaybackState is MediaPlaybackState.Playing;
             TimeSpan duration = vlcPlayer.NaturalDuration;
             TimeSpan position = vlcPlayer.Position;
             if (duration > TimeSpan.Zero && position >= duration - NearEnd) position = TimeSpan.Zero;
             vlcPlayer.Pause();
 
-            (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request);
+            (AirPlayCastResult result, Cast? cast) = await StartCastAsync(renderer, item, position, request, audioOnly);
             if (!_lifetime.IsCurrent(request))
             {
                 // Stop/supersession wins even if a concurrent failure completed first.
@@ -148,7 +168,8 @@ public sealed class AirPlayCastCoordinator
             _vlcPlayer = vlcPlayer;
             _renderer = renderer;
             _castContext.ActiveRenderer = renderer;
-            (uint width, uint height) = CurrentVideoSize(item, vlcPlayer.NaturalVideoWidth, vlcPlayer.NaturalVideoHeight);
+            (uint width, uint height) = AirPlayVideoDimensions.Current(audioOnly,
+                vlcPlayer.NaturalVideoWidth, vlcPlayer.NaturalVideoHeight);
             Activate(new AirPlayMediaPlayer(vlcPlayer, cast, item, position, duration, width,
                 height, vlcPlayer.Volume, vlcPlayer.IsMuted, _logger), cast);
             _logger.LogInformation("AirPlay cast started");
@@ -175,7 +196,7 @@ public sealed class AirPlayCastCoordinator
     /// </summary>
     [DynamicWindowsRuntimeCast(typeof(StorageFile))]
     private async Task<(AirPlayCastResult Result, Cast? Cast)> StartCastAsync(Renderer renderer, PlaybackItem item,
-        TimeSpan position, long request)
+        TimeSpan position, long request, bool audioOnly)
     {
         if (renderer.AirPlayReceiver is not { } receiver) return (AirPlayCastResult.Failed, null);
 
@@ -191,14 +212,14 @@ public sealed class AirPlayCastCoordinator
             CredentialStore = new PasswordVaultCredentialStore(),
             StartPositionSeconds = position.TotalSeconds,
         };
-        bool progressiveAudio = AirPlayMediaDelivery.Configure(options, file.FileType);
+        AirPlayMediaDelivery.Configure(options, audioOnly);
 
         Cast? cast = null;
         StorageFileMediaSource? source = null;
         bool contextsOffered = false;
 #if SCREENBOX_AIRPLAY_STEREO_AAC
         AirPlayAacFragmentStore? cache = null;
-        bool allowStereo = !progressiveAudio && _settingsService.AirPlayAllowStereoConversion;
+        bool allowStereo = _settingsService.AirPlayAllowStereoConversion;
 #endif
         try
         {
@@ -214,7 +235,9 @@ public sealed class AirPlayCastCoordinator
             }
 
             if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
-            if (!progressiveAudio) AirPlayAudioPolicy.Configure(options, cache, allowStereo);
+            // An original progressive result leaves an offered store unused; native release
+            // removes its empty reservation. Only permitted conversion seals fragments.
+            AirPlayAudioPolicy.Configure(options, cache, allowStereo);
 #endif
             source = await StorageFileMediaSource.OpenAsync(file);
             if (!_lifetime.IsCurrent(request)) return (AirPlayCastResult.Cancelled, null);
@@ -390,9 +413,10 @@ public sealed class AirPlayCastCoordinator
         Cast? cast = null;
         try
         {
-            (width, height) = await QueuedVideoSizeAsync(item, previous.LocalPlayer);
+            bool audioOnly;
+            (audioOnly, width, height) = await QueuedMediaInfoAsync(item, previous.LocalPlayer);
             // StartCastAsync rechecks this ticket before creating a source/native cast.
-            (result, cast) = await StartCastAsync(renderer, item, position, request);
+            (result, cast) = await StartCastAsync(renderer, item, position, request, audioOnly);
         }
         catch (OperationCanceledException)
         {
@@ -400,7 +424,7 @@ public sealed class AirPlayCastCoordinator
         }
         catch (Exception e)
         {
-            _logger.LogInformation("AirPlay queued video metadata failed: {ErrorType}", e.GetType().Name);
+            _logger.LogInformation("AirPlay queued media metadata failed: {ErrorType}", e.GetType().Name);
             result = _lifetime.IsCurrent(request) ? AirPlayCastResult.FileUnreadable : AirPlayCastResult.Cancelled;
         }
 
@@ -437,66 +461,66 @@ public sealed class AirPlayCastCoordinator
     }
 
     /// <summary>
-    /// Keeps VLC's effective dimensions for the already-open video, while M4A remains audio-only.
+    /// Resolves each queued item's own tracks and display size. Independent brokered-file
+    /// parsing is bounded and cancellable; neither dimensions nor policy carry over.
     /// </summary>
     [DynamicWindowsRuntimeCast(typeof(StorageFile))]
-    private static (uint Width, uint Height) CurrentVideoSize(PlaybackItem item, uint naturalWidth, uint naturalHeight)
-    {
-        return item.OriginalSource is StorageFile file
-            ? AirPlayVideoDimensions.Current(file.FileType, naturalWidth, naturalHeight)
-            : (naturalWidth, naturalHeight);
-    }
-
-    /// <summary>
-    /// Reads queued video metadata independently of the previous player. Brokered-file parsing is
-    /// bounded and cancellable by Stop/supersession; unknown dimensions fail before casting.
-    /// </summary>
-    [DynamicWindowsRuntimeCast(typeof(StorageFile))]
-    private async Task<(uint Width, uint Height)> QueuedVideoSizeAsync(PlaybackItem item, VlcMediaPlayer localPlayer)
+    private async Task<(bool AudioOnly, uint Width, uint Height)> QueuedMediaInfoAsync(PlaybackItem item, VlcMediaPlayer localPlayer)
     {
         // StartCastAsync reports NotLocalFile without parsing a network stream.
-        if (item.OriginalSource is not StorageFile file) return (0, 0);
+        if (item.OriginalSource is not StorageFile file) return (false, 0, 0);
         using var cancellation = new CancellationTokenSource();
-        _videoMetadataCancellation = cancellation;
+        _mediaMetadataCancellation = cancellation;
+        PlaybackItem? probe = null;
         try
         {
-            return await AirPlayVideoDimensions.QueuedAsync(file.FileType, async token =>
+#if !SCREENBOX_AIRPLAY_STEREO_AAC
+            // Preserve the ordinary build's M4A path without adding a metadata prerequisite.
+            if (AirPlayMediaDelivery.IsAudioOnly(file.FileType, false, false)) return (true, 0, 0);
+#endif
+            var tracks = item.Media.Tracks;
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+            // An audio track seen during a partial parse does not prove absence of video.
+            bool needsParse = item.Media.ParsedStatus is not LibVLCSharp.Shared.MediaParsedStatus.Done;
+#else
+            bool needsParse = !Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Video);
+#endif
+            if (needsParse)
             {
-                PlaybackItem? probe = null;
-                try
-                {
-                    var tracks = item.Media.Tracks;
-                    if (!Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Video))
-                    {
-                        // Own a separate descriptor/grant so parsing does not race the queue's
-                        // metadata work, and its lifetime survives disposal of the original item.
-                        probe = _playerService.CreatePlaybackItem(localPlayer, file);
-                        // Existing helper supports winrt:// brokered-file MRLs and bounds an
-                        // already-in-flight parse too. It does not open the paused local player.
-                        await probe.Media.ParseAsync(QueuedVideoParseTimeout, token);
-                        token.ThrowIfCancellationRequested();
-                        tracks = probe.Media.Tracks;
-                    }
+                // Own a separate descriptor/grant, independent of concurrent queue metadata work.
+                probe = _playerService.CreatePlaybackItem(localPlayer, file);
+                await probe.Media.ParseAsync(QueuedMediaParseTimeout, cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+#if SCREENBOX_AIRPLAY_STEREO_AAC
+                if (probe.Media.ParsedStatus is not LibVLCSharp.Shared.MediaParsedStatus.Done)
+                    throw new InvalidDataException("Queued media metadata is incomplete.");
+#endif
+                tracks = probe.Media.Tracks;
+            }
 
-                    foreach (LibVLCSharp.Shared.MediaTrack track in tracks)
+            bool audioOnly = AirPlayMediaDelivery.IsAudioOnly(file.FileType,
+                Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Audio),
+                Array.Exists(tracks, track => track.TrackType is LibVLCSharp.Shared.TrackType.Video));
+            var size = await AirPlayVideoDimensions.QueuedAsync(audioOnly, _ =>
+            {
+                foreach (LibVLCSharp.Shared.MediaTrack track in tracks)
+                {
+                    if (track.TrackType is LibVLCSharp.Shared.TrackType.Video)
                     {
-                        if (track.TrackType is not LibVLCSharp.Shared.TrackType.Video) continue;
                         var video = track.Data.Video;
-                        return AirPlayVideoDimensions.FromTrack(video.Width, video.Height, video.SarNum,
-                            video.SarDen, video.Orientation);
+                        return Task.FromResult(AirPlayVideoDimensions.FromTrack(video.Width, video.Height,
+                            video.SarNum, video.SarDen, video.Orientation));
                     }
+                }
 
-                    return (0u, 0u);
-                }
-                finally
-                {
-                    if (probe is not null) _playerService.DisposePlaybackItem(probe);
-                }
+                return Task.FromResult((0u, 0u));
             }, cancellation.Token);
+            return (audioOnly, size.Width, size.Height);
         }
         finally
         {
-            if (_videoMetadataCancellation == cancellation) _videoMetadataCancellation = null;
+            if (_mediaMetadataCancellation == cancellation) _mediaMetadataCancellation = null;
+            if (probe is not null) _playerService.DisposePlaybackItem(probe);
         }
     }
 
@@ -638,7 +662,7 @@ public sealed class AirPlayCastCoordinator
 
     private void CancelStartingCast()
     {
-        if (_videoMetadataCancellation is { } metadata)
+        if (_mediaMetadataCancellation is { } metadata)
         {
             _ = Task.Run(() =>
             {

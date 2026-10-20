@@ -11,8 +11,8 @@ public class AirPlayVideoDimensionsTests
     [Arguments(768u, 576u)]
     public async Task CurrentVideo_ShouldPreserveNaturalDisplaySize(uint width, uint height)
     {
-        await Assert.That(AirPlayVideoDimensions.Current(".mp4", width, height)).IsEqualTo((width, height));
-        await Assert.That(AirPlayVideoDimensions.Current(".m4a", width, height)).IsEqualTo((0u, 0u));
+        await Assert.That(AirPlayVideoDimensions.Current(false, width, height)).IsEqualTo((width, height));
+        await Assert.That(AirPlayVideoDimensions.Current(true, width, height)).IsEqualTo((0u, 0u));
     }
 
     /// <summary>A fresh queued video waits for its own metadata, not the preceding audio's zero size.</summary>
@@ -20,7 +20,7 @@ public class AirPlayVideoDimensionsTests
     public async Task QueuedVideo_ShouldWaitForIndependentMetadata()
     {
         var metadata = new TaskCompletionSource<(uint, uint)>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Task<(uint, uint)> size = AirPlayVideoDimensions.QueuedAsync(".mp4", _ => metadata.Task, CancellationToken.None);
+        Task<(uint, uint)> size = AirPlayVideoDimensions.QueuedAsync(false, _ => metadata.Task, CancellationToken.None);
         await Assert.That(size.IsCompleted).IsFalse();
         metadata.SetResult((1920, 1080));
         await Assert.That(await size.WaitAsync(TimeSpan.FromSeconds(30))).IsEqualTo((1920u, 1080u));
@@ -30,7 +30,7 @@ public class AirPlayVideoDimensionsTests
     [Test]
     public async Task QueuedAudio_ShouldNotReadVideoMetadata()
     {
-        var size = await AirPlayVideoDimensions.QueuedAsync(".M4A",
+        var size = await AirPlayVideoDimensions.QueuedAsync(true,
             _ => throw new InvalidOperationException("Audio must not parse video metadata."), CancellationToken.None);
         await Assert.That(size).IsEqualTo((0u, 0u));
     }
@@ -40,7 +40,7 @@ public class AirPlayVideoDimensionsTests
     public async Task QueuedMetadata_ShouldPropagateCancellation()
     {
         using var cancellation = new CancellationTokenSource();
-        Task<(uint, uint)> size = AirPlayVideoDimensions.QueuedAsync(".mkv", async token =>
+        Task<(uint, uint)> size = AirPlayVideoDimensions.QueuedAsync(false, async token =>
         {
             await Task.Delay(Timeout.Infinite, token);
             return (1920u, 1080u);
@@ -57,7 +57,7 @@ public class AirPlayVideoDimensionsTests
     {
         try
         {
-            await AirPlayVideoDimensions.QueuedAsync(".mp4", _ => Task.FromResult((0u, 0u)), CancellationToken.None);
+            await AirPlayVideoDimensions.QueuedAsync(false, _ => Task.FromResult((0u, 0u)), CancellationToken.None);
         }
         catch (InvalidDataException) { return; }
         throw new InvalidOperationException("Queued video without dimensions must be rejected.");

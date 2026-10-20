@@ -20,7 +20,7 @@ function Assert-Refused([scriptblock]$Operation, [string]$Message) {
 }
 try {
     foreach ($stereo in @($false, $true)) {
-        $name = if ($stereo) { 'SendAirPlay2.StereoAac.0.5.0-ci.294.nupkg' } else { 'SendAirPlay2.0.3.0-ci.207.nupkg' }
+        $name = if ($stereo) { 'SendAirPlay2.StereoAac.0.6.0-ci.330.nupkg' } else { 'SendAirPlay2.0.3.0-ci.207.nupkg' }
         $copy = Join-Path $scratch $name
         Copy-Item -LiteralPath (Join-Path $root "packages-airplay/$name") -Destination $copy
         $copies += $copy

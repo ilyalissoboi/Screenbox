@@ -11,9 +11,9 @@
     <BaseIntermediateOutputPath>obj\airplay-stereo-aac\</BaseIntermediateOutputPath>
     <BaseOutputPath>bin\airplay-stereo-aac\</BaseOutputPath>
     <AirPlayPackageId>SendAirPlay2.StereoAac</AirPlayPackageId>
-    <AirPlayPackageVersion>0.5.0-ci.294</AirPlayPackageVersion>
-    <AirPlayPackageSha256>a06216e954e8ef1e2452abe8472e95fbbc04c036e5e1c017e4a92642b20c76b8</AirPlayPackageSha256>
-    <AirPlayReleaseTag>nuget-stereo-aac-v0.5.0-ci.294</AirPlayReleaseTag>
+    <AirPlayPackageVersion>0.6.0-ci.330</AirPlayPackageVersion>
+    <AirPlayPackageSha256>9567655c5c4f0183fddeaea9f497d869d28b79036d599cbf5d87f241e74eb3ad</AirPlayPackageSha256>
+    <AirPlayReleaseTag>nuget-stereo-aac-v0.6.0-ci.330</AirPlayReleaseTag>
     <DefineConstants>$(DefineConstants);SCREENBOX_AIRPLAY_STEREO_AAC</DefineConstants>
   </PropertyGroup>
 </Project>

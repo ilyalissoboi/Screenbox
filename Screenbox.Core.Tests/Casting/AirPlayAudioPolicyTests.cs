@@ -27,24 +27,29 @@ public class AirPlayAudioPolicyTests
 
 #if SCREENBOX_AIRPLAY_STEREO_AAC
     [Test]
-    public async Task PreserveOriginal_ShouldNotRequireWritableStorage()
+    [Arguments(AudioDeliveryProfile.AppleHlsV1)]
+    [Arguments(AudioDeliveryProfile.AppleAudioV1)]
+    public async Task PreserveOriginal_ShouldKeepItemProfileWithoutWritableStorage(AudioDeliveryProfile profile)
     {
-        var options = new CastOptions();
+        var options = new CastOptions { AudioProfile = profile };
         AirPlayAudioPolicy.Configure(options, null, allowStereo: false);
         await Assert.That(options.Delivery).IsEqualTo(CastDelivery.AutomaticAudioHls);
-        await Assert.That(options.AudioProfile).IsEqualTo(AudioDeliveryProfile.AppleHlsV1);
+        await Assert.That(options.AudioProfile).IsEqualTo(profile);
         await Assert.That(options.ConversionPermission).IsEqualTo(AudioConversionPermission.PreserveOriginal);
         await Assert.That(options.FragmentStore).IsNull();
         await Assert.That(options.CacheQuotaBytes).IsEqualTo(0ul);
     }
 
     [Test]
-    public async Task AllowStereo_ShouldUseExplicitPermissionAndFiniteQuota()
+    [Arguments(AudioDeliveryProfile.AppleHlsV1)]
+    [Arguments(AudioDeliveryProfile.AppleAudioV1)]
+    public async Task AllowStereo_ShouldKeepItemProfileAndFiniteQuota(AudioDeliveryProfile profile)
     {
-        var options = new CastOptions();
+        var options = new CastOptions { AudioProfile = profile };
         var store = new UnusedStore();
         AirPlayAudioPolicy.Configure(options, store, allowStereo: true);
         await Assert.That(options.ConversionPermission).IsEqualTo(AudioConversionPermission.AllowStereo);
+        await Assert.That(options.AudioProfile).IsEqualTo(profile);
         await Assert.That(options.FragmentStore).IsEqualTo(store);
         await Assert.That(options.CacheQuotaBytes).IsEqualTo(536870912ul);
         try { AirPlayAudioPolicy.Configure(options, null, allowStereo: true); }

@@ -3,7 +3,7 @@ using SendAirPlay2;
 
 namespace Screenbox.Core.Casting.AirPlay;
 
-/// <summary>Build availability and explicit permission for the finite Apple HLS profile.</summary>
+/// <summary>Build availability and conversion permission for the selected finite Apple profile.</summary>
 internal static class AirPlayAudioPolicy
 {
 #if SCREENBOX_AIRPLAY_STEREO_AAC
@@ -14,7 +14,7 @@ internal static class AirPlayAudioPolicy
     {
         if (allowStereo && store is null) throw new ArgumentNullException(nameof(store));
         options.Delivery = CastDelivery.AutomaticAudioHls;
-        options.AudioProfile = AudioDeliveryProfile.AppleHlsV1;
+        // Per-item routing chooses the profile; permission must never replace that choice.
         options.ConversionPermission = allowStereo
             ? AudioConversionPermission.AllowStereo
             : AudioConversionPermission.PreserveOriginal;
