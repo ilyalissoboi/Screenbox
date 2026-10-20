@@ -1,5 +1,13 @@
 # AirPlay AAC/M4A audio files
 
+**Current API-6 integration (2026-10-20):** the opt-in build now pins
+published `0.6.0-ci.330` and selects the audio-only or video profile independently
+for each current/queued item's parsed tracks. Both logic/MSIX/payload profiles
+and the focused written Mac/Apple TV MP3/FLAC/mixed-queue/transition gate pass in
+development 1.0.0.15. Conversion is restored OFF; final owned cache is empty.
+Read [the current scope and evidence](AIRPLAY_AUDIO_ONLY_POLICY.md). The older
+checkpoints below retain their original package/binary scope.
+
 2026-10-18, recorded opt-in x64 host gate passed. The user authorizes the
 Screenbox slice after native documentation PR #82 merges as `afb9ee8`, following the
 completed native D97 and packaged UWP D98 AAC/M4A gates. Those observations do

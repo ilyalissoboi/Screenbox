@@ -10,19 +10,19 @@ namespace Screenbox.Core.Casting.AirPlay;
 internal static class AirPlayVideoDimensions
 {
     /// <summary>VLC's open-player dimensions already account for display metadata; do not replace them.</summary>
-    internal static (uint Width, uint Height) Current(string fileType, uint naturalWidth, uint naturalHeight) =>
-        AirPlayMediaDelivery.IsProgressiveAudio(fileType) ? (0, 0) : (naturalWidth, naturalHeight);
+    internal static (uint Width, uint Height) Current(bool audioOnly, uint naturalWidth, uint naturalHeight) =>
+        audioOnly ? (0, 0) : (naturalWidth, naturalHeight);
 
     /// <summary>
-    /// Audio needs no metadata. A queued video must supply its own nonzero display size;
+    /// Classified audio needs no video-size read. A queued video supplies its own display size;
     /// the cancellable metadata reader owns its parse timeout and must honor the token.
     /// Failure leaves the coordinator's normal paused local handoff in charge.
     /// </summary>
-    internal static async Task<(uint Width, uint Height)> QueuedAsync(string fileType,
+    internal static async Task<(uint Width, uint Height)> QueuedAsync(bool audioOnly,
         Func<CancellationToken, Task<(uint Width, uint Height)>> readMetadata, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (AirPlayMediaDelivery.IsProgressiveAudio(fileType)) return (0, 0);
+        if (audioOnly) return (0, 0);
         var size = await readMetadata(cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (size.Width == 0 || size.Height == 0) throw new InvalidDataException("Queued video has no display dimensions.");

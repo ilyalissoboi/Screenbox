@@ -1,5 +1,13 @@
 # Experimental x64 AirPlay audio conversion
 
+**Current API-6 integration (2026-10-20):** the opt-in build now pins
+published `0.6.0-ci.330` and selects the audio-only or video profile independently
+for each current/queued item's parsed tracks. Both logic/MSIX/payload profiles
+and the focused written Mac/Apple TV MP3/FLAC/mixed-queue/transition gate pass in
+development 1.0.0.15. Conversion is restored OFF; final owned cache is empty.
+Read [the current scope and evidence](AIRPLAY_AUDIO_ONLY_POLICY.md). The older
+checkpoints below retain their original package/binary scope.
+
 **PR #16 review follow-up:** current video now preserves VLC's natural display
 size; an unopened queued video resolves its own metadata instead of inheriting
 an audio item's zero dimensions. Logic suites pass 142/157 and both MSIX/payload
@@ -68,9 +76,9 @@ msbuild Screenbox\Screenbox.csproj -restore -p:Configuration=Release -p:Platform
 ```
 
 `AirPlay.Package.props` owns the selected identity/version/tag/hash and compile
-symbol. The opt-in pin is `SendAirPlay2.StereoAac 0.5.0-ci.294`, SHA-256
-`a06216e954e8ef1e2452abe8472e95fbbc04c036e5e1c017e4a92642b20c76b8`, from the
-[published prerelease](https://github.com/ilyalissoboi/send-airplay2/releases/tag/nuget-stereo-aac-v0.5.0-ci.294).
+symbol. The opt-in pin is `SendAirPlay2.StereoAac 0.6.0-ci.330`, SHA-256
+`9567655c5c4f0183fddeaea9f497d869d28b79036d599cbf5d87f241e74eb3ad`, from the
+[published prerelease](https://github.com/ilyalissoboi/send-airplay2/releases/tag/nuget-stereo-aac-v0.6.0-ci.330).
 The downloader verifies existing files as well as new downloads. It preserves
 rejected cache files for inspection. x86/ARM64, conflicting runtime identifiers
 and malformed profile flags are refused. Both package identities must not enter
