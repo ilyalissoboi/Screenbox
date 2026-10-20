@@ -42,30 +42,46 @@ audio is `(0, 0)`, current video retains VLC's effective size, and queued video
 uses its own sample-aspect/orientation metadata. Neither policy nor dimensions
 are inherited from a preceding item.
 
-## Validation checkpoint
+## Validation gate: passed in development 1.0.0.15
 
 VS 2026 MSBuild compiles both pure logic profiles. Tests pass 142/142 ordinary
 and 163/163 opt-in, covering audio-container classification, video-track precedence,
-missing tracks, profile/MIME reset between mixed items, permission independence,
-finite quota and existing dimension/cancellation/lifetime controls. Both pinned
-downloads, corruption refusals and architecture/profile guards pass.
+missing tracks, mixed-item profile/MIME reset, permission independence, finite
+quota and existing dimension/cancellation/lifetime controls. Both pinned downloads,
+corruption refusals and architecture/profile guards pass.
 
-Both actual Release MSIX profiles build. Distribution inspection matches all 40
-opt-in native/source/notice files and both ordinary DLLs, with no ordinary codec
-leakage. Development 1.0.0.15 is registered in place with identity/data preserved
-and only its extracted manifest version changed. Its actual AppContainer/package
-identity, executable and all six loaded ci.330 DLLs match. Focused manual checks
-are pending. Existing translation, legacy migration
-and third-party trim warnings remain; no native interoperability is inferred
-from logic or packaging success.
+Both actual Release MSIX builds and distribution checks pass: two ordinary DLLs
+without codec leakage, and all 40 opt-in native/source/notice files matching
+ci.330. Existing translation, legacy migration and third-party trim warnings
+remain. Development 1.0.0.15 updates in place with identity/data preserved and
+only its extracted manifest version changed. Four actual package/AppContainer,
+executable and six-DLL captures match. Inspect final PR-head CI separately;
+local receiver observations do not verify separately built CI artifacts.
 
-Written manual checks target the changed paths: MP3 with conversion off, a
-required-conversion refusal, converted FLAC controls, and MP3 → converted PCM MOV
-→ video → AAC queues on the recorded Mac/macOS 26.7.1 and Apple TV/tvOS 26.6.
-Queue advance, rapid Next and transition Stop cover the changed metadata/profile
-boundary. Reuse earlier consent-cancellation and full codec listening evidence;
-do not repeat those unchanged matrices. No new settings/layout is introduced.
+The user confirms these focused written checks on Mac/macOS 26.7.1 and Apple
+TV/tvOS 26.6, with versions unchanged:
 
-Speaker/RAOP transport, discrete converted surround, Chromecast hardware,
-user-deferred remote-Stop classification and long-input/cache-quota evaluation
-remain deferred. This is a development gate, not a new Screenbox release.
+- MP3 with conversion off on both: nonzero start, RIGHT/BOTH markers,
+  pause/resume, forward/backward seeks, Stop, local paused and app responsive.
+- Native FLAC with conversion off on Mac: format/conversion refusal,
+  no receiver playback and local paused.
+- Native FLAC with conversion on, both: nonzero start, markers, controls,
+  both seeks, Stop, local paused and app responsive.
+- MP3 → converted PCM MOV audio → video → AAC, both: natural queue advance
+  with correct sound/video and local paused after the queue ended.
+- Rapid Next twice reached the third video's picture/sound on both. Next
+  followed immediately by Stop during transition closed playback without delayed
+  restart, left local playback paused and kept the app responsive.
+
+Conversion is restored OFF and the app remains open/paused. Final owned cache
+directories/files are zero without cleanup mutation. No further manual check is
+pending. No Computer Use visual confirmation or unchanged cancellation/full
+codec listening matrix was repeated. The complete sanitized executable/module,
+MSIX, fixture and observation evidence is in
+[native evidence PR #97](https://github.com/ilyalissoboi/send-airplay2/pull/97).
+Earlier checkpoints retain their original binary scopes; this focused gate does
+not establish all variants, gapless playback or sustained long-input behavior.
+
+No setting/layout changes or new release are introduced. Speaker/RAOP transport,
+discrete converted surround, Chromecast hardware, user-deferred remote-Stop
+classification and long-input/cache-quota evaluation remain deferred.

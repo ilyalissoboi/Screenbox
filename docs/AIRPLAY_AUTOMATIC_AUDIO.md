@@ -2,8 +2,9 @@
 
 **Current API-6 integration (2026-10-20):** the opt-in build now pins
 published `0.6.0-ci.330` and selects the audio-only or video profile independently
-for each current/queued item's parsed tracks. Logic tests and opt-in packaging
-pass; focused checks in development 1.0.0.15 are in progress.
+for each current/queued item's parsed tracks. Both logic/MSIX/payload profiles
+and the focused written Mac/Apple TV MP3/FLAC/mixed-queue/transition gate pass in
+development 1.0.0.15. Conversion is restored OFF; final owned cache is empty.
 Read [the current scope and evidence](AIRPLAY_AUDIO_ONLY_POLICY.md). The older
 checkpoints below retain their original package/binary scope.
 
