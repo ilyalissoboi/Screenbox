@@ -5,12 +5,16 @@ PR #17 merged as `b2b987d68b844ef0e3f577cc0622d223a329adf9`; all four checks
 passed at final head `2a001be1`. Native evidence PR #97 merged as `65dd17f`, with
 all 17 checks passed at `6effcf1`.
 
-**Preparation is complete; publication is not approved or performed.**
-The five exact assets are retained locally, with proposed
-[publication-ready notes](releases/airplay-preview-0.2.0-preview.1.md).
-The new tag must be `airplay-preview-0.2.0-preview.1` and target the original
-merged source `b2b987d68b844ef0e3f577cc0622d223a329adf9`, not a later docs merge.
-Do not regenerate these bytes under this version or replace earlier release assets.
+**Published with explicit user approval on 2026-10-21 (Asia/Tokyo).**
+[Screenbox AirPlay Preview 0.2.0-preview.1](https://github.com/ilyalissoboi/Screenbox/releases/tag/airplay-preview-0.2.0-preview.1)
+contains the exact five assets below and the reviewed
+[release notes](releases/airplay-preview-0.2.0-preview.1.md). Fresh unauthenticated
+public downloads of all five assets match their recorded sizes/SHA-256 hashes;
+the public notes match the reviewed body. Release ID `418990083` is a
+public prerelease. Its tag resolves to original merged build source
+`b2b987d68b844ef0e3f577cc0622d223a329adf9`, not the later docs merge `200d7bfa`.
+No candidate bytes were regenerated. Approval/publication are complete; do not
+republish or replace assets. The build/installation evidence below is historical.
 
 ## Build and verification
 
@@ -56,7 +60,8 @@ original local binary/testing scopes. No unchanged listening/cancellation matrix
 is repeated. Speakers/RAOP, converted discrete surround, Chromecast hardware,
 remote-Stop classification and long-input/cache scaling remain deferred.
 
-After review, obtain explicit approval for this exact candidate before publishing
-the GitHub prerelease. Then verify fresh public downloads of all five assets.
-This is separate from Store/winget/nuget.org publication and from previous release
-approvals. No new tag/release/assets have been created here.
+The five-asset publication and fresh public-download verification are complete.
+This step adds no new build, installation, visual or receiver observation; the
+original development-runtime and review-regression scopes remain unchanged.
+No Store, winget, nuget.org or additional library publication is included.
+Choose any later development scope separately and preserve the deferrals above.
