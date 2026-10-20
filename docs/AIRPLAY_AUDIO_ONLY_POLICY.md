@@ -9,6 +9,30 @@ package SHA-256 is
 Ordinary builds retain codec-free `SendAirPlay2 0.3.0-ci.207` and their existing
 M4A progressive/video-remux behavior. No new dependency or codec is adopted.
 
+## Review follow-up: cast while an item is opening
+
+[The PR #17 finding](https://github.com/ilyalissoboi/Screenbox/pull/17#discussion_r4324921353)
+identified that Cast is available before VLC finishes inserting its current
+item's tracks. Fix `23f708e8` uses the same bounded, cancellable independent
+metadata path for current and queued items. Incomplete or empty inventories wait
+for a complete parse rather than reporting a valid opening item as unreadable
+or mistaking partial audio metadata for an audio-only file. Parser descriptors
+and brokered grants are still released in `finally`.
+
+Before pausing or starting a native cast, the coordinator rechecks the request,
+player and item. Stop/supersession wins over a late metadata result. Current
+nonzero VLC display dimensions remain preferred; an opening video can use its
+independently parsed display size if VLC has not supplied one yet.
+
+Both logic suites pass: 142/142 ordinary and 176/176 opt-in. Thirteen new
+regression cases cover delayed/empty/partial metadata, complete-inventory reuse,
+incomplete or empty parse refusal, parser failure, pre-cancellation, cancellation
+during parse and cancellation winning over a late result. Both actual Release
+MSIX builds and pinned-payload checks pass (2 ordinary DLLs, 40 opt-in
+native/source/notice files). The existing 1.0.0.15 receiver gate remains scoped
+to its original executable; the review fix adds no new receiver result or app
+installation and does not repeat unchanged listening/cancellation tests.
+
 ## Per-item policy and ownership
 
 The opt-in coordinator uses parsed track presence to choose an explicit policy
